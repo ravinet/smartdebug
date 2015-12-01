@@ -7,20 +7,17 @@ files = os.listdir(recorded_folder)
 
 # read in original log. while going through, make list of all unique variables (only window for now, not DOM)
 log = []
-variables = []
+# make a dictionary of write deps for each variable (key is var name, value is list of deps)
+var_deps = {}
 with open(log_file) as f:
     for line in f:
         curr_line = json.loads(line.strip("\n"))
         log.append(curr_line)
         curr_var = curr_line.get('PropName')
-        if ( curr_var not in variables ):
-            variables.append(curr_var)
-
-# make a dictionary of write deps for each variable (key is var name, value is list of deps)
-var_deps = {}
-for v in variables:
-    if ( v not in var_deps ):
-        var_deps[v] = []
+        if ( curr_var not in var_deps ):
+            var_deps[curr_var] = []
+        if ( curr_line.get('OpType') == 'WRITE' ):
+            var_deps[curr_var].append(curr_line)
 
 # given an object name and line number (from log), return relevant source code line
 def get_source_line(filename, line_no):
