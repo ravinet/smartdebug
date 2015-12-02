@@ -9,4 +9,4 @@ fs = require('fs');
 
 var code = process.argv[2];
 var ast = esprima.parse(code, {loc: true});
-console.log(ast);
+console.log(JSON.stringify(ast, null, 4));
