@@ -25,21 +25,60 @@ estraverse.traverse(ast, {
     leave: done
 });
 
-function findline( node ) {
+// find the relevant block based on line number and then handle types accordingly
+function findline( node, p ) {
     // first check if the line number is even in the program
     if ( "loc" in node ) {
-        if ( (line_num < node.loc.start.line) || (line_num > node.loc.end.line) ) {
-            throw "Requested line number (" + line_num + ") not in file (range " + node.loc.start.line + ":" + node.loc.end.line + ")";
+        if ( node.type == "Program" ) {
+            if ( (line_num < node.loc.start.line) || (line_num > node.loc.end.line) ) {
+                throw "Requested line number (" + line_num + ") not in file (range " + node.loc.start.line + ":" + node.loc.end.line + ")";
+            }
         }
     }
 
-    // check if the relevant line number is here
-    if ( node.type != "Program" ) {
-        console.log(node);
-        console.log("\n");
+    // only do something if the line number is correct!
+    if ( "loc" in node ) {
+        if ( node.loc.start.line == line_num ) {
+            // first detect specific types (e.g., AssignmentExpression) and then traverse up parent if any info is needed
+            if ( node.type == "AssignmentExpression" ) {
+                parent_vars = [];
+                // 'id' is left and 'init' is right
+                if ( node.right.type == 'Identifier' ) { // right side is a var so we need to add dep
+                    parent_vars.push(node.right.name);
+                } else if ( node.right.type == "BinaryExpression" ) { // have to get the variables we care about from the binary expression
+                    if ( node.right.left.type == 'Identifier' ) {
+                        parent_vars.push(node.right.left.name);
+                    }
+                    if ( node.right.right.type == 'Identifier' ) {
+                        parent_vars.push(node.right.right.name);
+                    }
+                }
+                var res = {};
+                res[node.left.name] = parent_vars;
+                console.log(res);
+            } else if ( node.type == 'VariableDeclarator' ) { // return (assignment, left_var, right_var)
+                parent_vars = [];
+                // 'id' is left and 'init' is right
+                if ( node.init.type == 'Identifier' ) { // right side is a var so we need to add dep
+                    parent_vars.push(node.init.name);
+                } else if ( node.init.type == "BinaryExpression" ) { // have to get the variables we care about from the binary expression
+                    if ( node.init.left.type == 'Identifier' ) {
+                        parent_vars.push(node.init.left.name);
+                    }
+                    if ( node.init.right.type == 'Identifier' ) {
+                        parent_vars.push(node.init.right.name);
+                    }
+                }
+                var res = {};
+                res[node.id.name] = parent_vars;
+                console.log(res);
+            } else {
+                console.log("Unhandled type: " + node.type);
+            }
+        }
     }
 }
 
 function done() {
-    console.log("DONE");
+    //console.log("DONE");
 }
