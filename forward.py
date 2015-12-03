@@ -38,6 +38,28 @@ def get_source_line(filename, line_no):
     else:
         raise ValueError("Object (" + filename + ") doesn't seem to exist in recorded folder (" + recorded_folder + ")")
 
+# function that considers individual variable dependencies (var_deps) and cross-variable deps (cross_deps) and outputs dot file
+def make_dot():
+    # first print standard DOT file lines
+    print "strict digraph G {\nratio=compress;\nconcentrate=true;"
+
+    # first go through per-variable dependencies and add edges (one write to next)
+    for k in var_deps:
+        write_list = var_deps[k]
+        for x in range(0, len(write_list)):
+            if ( x != 0 ): # currently just print the variable,file,line_num
+                curr_parent = k + "," + write_list[x-1].get('script') + "," + write_list[x-1].get('OrigLine')
+                curr_child = k + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
+                print "\"" + curr_parent + "\" -> \"" + curr_child + "\";"
+            else:
+                if ( len(write_list) == 1 ):
+                    curr_node = k + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
+                    print "\"" + curr_node + "\";"
+
+    # finally, close dot graph
+    print "}"
+
+
 # read in original log. while going through, make list of all unique variables (only window for now, not DOM)
 # also get the AST for each source file (for now, only consider standalone JS files)
 log = []
@@ -65,6 +87,7 @@ with open(log_file) as f:
                 os.system("rm temp_file")
             else:
                 raise ValueError("Object (" + curr_script + ") doesn't seem to exist in recorded folder (" + recorded_folder + ")")
+
 # iterate through log (top to bottom) and print out list of source code lines and corresponding ASTs
 #for entry in log:
 #    source_line = get_source_line(entry.get('script'), int(entry.get('OrigLine')))
