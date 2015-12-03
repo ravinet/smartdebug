@@ -82,3 +82,10 @@ function findline( node, p ) {
 function done() {
     //console.log("DONE");
 }
+
+function handle_nesting(node) {
+    // verify that node is nested!
+    if ( node.type != "MemberExpression" ) {
+        throw "handle_nesting() called on node that is not nested!";
+    }
+}
