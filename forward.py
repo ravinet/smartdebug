@@ -16,7 +16,7 @@ def get_source_file(filename):
             if ( out_find.split("gzipped=")[1].split("*")[0] == "true" ):
                 os.system("gzip -d -c temp_file > temp_file2")
                 os.system("mv temp_file2 temp_file")
-                return True
+            return True
         else:
             os.system("rm temp_file")
     return False
@@ -65,6 +65,8 @@ def make_dot():
 log = []
 # make a dictionary of write deps for each variable (key is var name, value is list of deps)
 var_deps = {}
+# dictionary of cross-variable dependencies (keys are variables and values are dictionaries where keys are index of key var and values are tuples (var, index) of parents)
+cross_deps = {}
 # dictionary of ASTs (key is filename, value is AST)
 asts = {}
 with open(log_file) as f:
@@ -76,18 +78,45 @@ with open(log_file) as f:
             var_deps[curr_var] = []
         if ( curr_line.get('OpType') == 'WRITE' ):
             var_deps[curr_var].append(curr_line)
-        curr_script = curr_line.get('script')
-        if ( curr_script not in asts ):
+            curr_script = curr_line.get('script')
             # first get the file as plaintext (if it exists)
             if ( get_source_file(curr_script) ):
-                cmd = "nodejs process.js file temp_file"
+                cmd = "nodejs line_type.js file temp_file " + curr_line.get('OrigLine')
                 proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
                 (out, err) = proc.communicate()
-                asts[curr_script] = out
+                out_json = json.loads(out.strip("\n").replace("\'", '"'))
+                # there could be some relevant deps!
+                # for now we are only considering writes b/c with assignments read precedes write for same line and we want the write to be already listed for left side variable!
+                if (len(out_json.keys()) > 0 ):
+                    for key in out_json:
+                        curr_key = key
+                        if ( curr_key[0:7] == "window." ):
+                            curr_key = curr_key[7:]
+                        if ( curr_key not in var_deps ):
+                            var_deps[curr_key] = []
+                        for dep in out_json[key]:
+                            curr_dep = dep
+                            if ( dep[0:7] == "window." ):
+                                curr_dep = dep[7:]
+                            if ( curr_dep not in var_deps ):
+                                var_deps[curr_dep] = []
+                            if curr_key not in cross_deps:
+                                cross_deps[curr_key] = {}
+                            curr_key_line = len(var_deps[curr_key])-1
+                            if ( curr_key_line not in cross_deps[curr_key] ):
+                                cross_deps[curr_key][curr_key_line] = []
+                            dep_tuple = (curr_dep, len(var_deps[curr_dep])-1)
+                            if ( dep_tuple not in cross_deps[curr_key][curr_key_line] ):
+                                cross_deps[curr_key][curr_key_line].append(dep_tuple)
+                # if "window.", strip it since logs don't list this
+                print curr_line
+                print out
+                print "\n"
+                #asts[curr_script] = out
                 os.system("rm temp_file")
             else:
                 raise ValueError("Object (" + curr_script + ") doesn't seem to exist in recorded folder (" + recorded_folder + ")")
-
+print cross_deps
 # iterate through log (top to bottom) and print out list of source code lines and corresponding ASTs
 #for entry in log:
 #    source_line = get_source_line(entry.get('script'), int(entry.get('OrigLine')))
