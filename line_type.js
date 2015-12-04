@@ -83,9 +83,24 @@ function done() {
     //console.log("DONE");
 }
 
-function handle_nesting(node) {
+function handle_nesting(node,name) {
     // verify that node is nested!
     if ( node.type != "MemberExpression" ) {
         throw "handle_nesting() called on node that is not nested!";
+    }
+
+    // first prepend the current property name to 'name'
+    name = node.property.name + "." + name;
+
+    // recursively go through MemberExpressions until 'object' field is a Literal
+    if ( node.object.type == "MemberExpression" ) {
+        return handle_nesting(node.object, name);
+    } else {
+        name = node.object.name + "." + name;
+        if ( name.slice(-1) == "." ) {
+            return name.substring(0, name.length-1);
+        } else {
+            return name;
+        }
     }
 }
