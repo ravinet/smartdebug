@@ -45,32 +45,60 @@ function findline( node, p ) {
                 // 'id' is left and 'init' is right
                 if ( node.right.type == 'Identifier' ) { // right side is a var so we need to add dep
                     parent_vars.push(node.right.name);
+                } else if ( node.right.type == "MemberExpression" ) {
+                    var full_name = handle_nesting(node.right, "");
+                    parent_vars.push(full_name);
                 } else if ( node.right.type == "BinaryExpression" ) { // have to get the variables we care about from the binary expression
                     if ( node.right.left.type == 'Identifier' ) {
                         parent_vars.push(node.right.left.name);
+                    } else if ( node.right.left.type == "MemberExpression" ) {
+                        var full_name = handle_nesting(node.right.left, "");
+                        parent_vars.push(full_name);
                     }
                     if ( node.right.right.type == 'Identifier' ) {
                         parent_vars.push(node.right.right.name);
+                    } else if (node.right.right.type == "MemberExpression" ) {
+                        var full_name = handle_nesting(node.right.right, "");
+                        parent_vars.push(full_name);
                     }
                 }
                 var res = {};
-                res[node.left.name] = parent_vars;
+                if ( node.left.type == "MemberExpression" ) {
+                    var full_name = handle_nesting(node.left, "");
+                    res[full_name] = parent_vars;
+                } else {
+                    res[node.left.name] = parent_vars;
+                }
                 console.log(res);
             } else if ( node.type == 'VariableDeclarator' ) { // return (assignment, left_var, right_var)
                 parent_vars = [];
                 // 'id' is left and 'init' is right
                 if ( node.init.type == 'Identifier' ) { // right side is a var so we need to add dep
                     parent_vars.push(node.init.name);
+                } else if ( node.init.type == "MemberExpression" ) {
+                    var full_name = handle_nesting(node.init, "");
+                    parent_vars.push(full_name);
                 } else if ( node.init.type == "BinaryExpression" ) { // have to get the variables we care about from the binary expression
                     if ( node.init.left.type == 'Identifier' ) {
                         parent_vars.push(node.init.left.name);
+                    } else if ( node.init.left.type == "MemberExpression" ) {
+                        var full_name = handle_nesting(node.init.left, "");
+                        parent_vars.push(full_name);
                     }
                     if ( node.init.right.type == 'Identifier' ) {
                         parent_vars.push(node.init.right.name);
+                    } else if ( node.init.right.type == "MemberExpression" ) {
+                        var full_name = handle_nesting(node.init.right, "");
+                        parent_vars.push(full_name);
                     }
                 }
                 var res = {};
-                res[node.id.name] = parent_vars;
+                if ( node.id.type == "MemberExpression" ) {
+                    var full_name = handle_nesting(node.id, "");
+                    res[full_name] = parent_vars;
+                } else {
+                    res[node.id.name] = parent_vars;
+                }
                 console.log(res);
             } else {
                 console.log("Unhandled type: " + node.type);
