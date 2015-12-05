@@ -3,6 +3,9 @@ import os, sys, subprocess, json
 log_file = sys.argv[1]
 recorded_folder = sys.argv[2]
 files = os.listdir(recorded_folder)
+imp_var = ""
+if ( len(sys.argv) > 3 ):
+    imp_var = sys.argv[3]
 
 # takes an object name and finds the relevant file in the recorded folder
 # if it exists, it returns True (plaintext is in curr_dir/'temp_file'), else False
@@ -45,24 +48,30 @@ def make_dot():
 
     # first go through per-variable dependencies and add edges (one write to next)
     for k in var_deps:
+        curr_ending = ";"
+        if ( k == imp_var ):
+            curr_ending = "[color=red];"
         write_list = var_deps[k]
         for x in range(0, len(write_list)):
             if ( x != 0 ): # currently just print the variable,file,line_num
                 curr_parent = k + "," + write_list[x-1].get('script') + "," + write_list[x-1].get('OrigLine')
                 curr_child = k + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
-                print "\"" + curr_parent + "\" -> \"" + curr_child + "\";"
+                print "\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending
             else:
                 if ( len(write_list) == 1 ):
                     curr_node = k + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
-                    print "\"" + curr_node + "\";"
+                    print "\"" + curr_node + "\"" + curr_ending
 
     # add edges for cross-var dependencies
     for c in cross_deps:
+        curr_ending = ";"
+        if ( c == imp_var ):
+            curr_ending = "[color=red];"
         for ind in cross_deps[c]:
             curr_child = c + "," + var_deps[c][ind].get('script') + "," + var_deps[c][ind].get('OrigLine')
             for pind in cross_deps[c][ind]:
                 curr_parent = pind[0] + "," + var_deps[pind[0]][pind[1]].get('script') + "," + var_deps[pind[0]][pind[1]].get('OrigLine')
-                print "\"" + curr_parent + "\" -> \"" + curr_child + "\";"
+                print "\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending
 
     # finally, close dot graph
     print "}"
