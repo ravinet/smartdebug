@@ -56,6 +56,14 @@ def make_dot():
                     curr_node = k + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
                     print "\"" + curr_node + "\";"
 
+    # add edges for cross-var dependencies
+    for c in cross_deps:
+        for ind in cross_deps[c]:
+            curr_child = c + "," + var_deps[c][ind].get('script') + "," + var_deps[c][ind].get('OrigLine')
+            for pind in cross_deps[c][ind]:
+                curr_parent = pind[0] + "," + var_deps[pind[0]][pind[1]].get('script') + "," + var_deps[pind[0]][pind[1]].get('OrigLine')
+                print "\"" + curr_parent + "\" -> \"" + curr_child + "\";"
+
     # finally, close dot graph
     print "}"
 
