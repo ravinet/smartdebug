@@ -43,8 +43,10 @@ def get_source_line(filename, line_no):
 
 # function that considers individual variable dependencies (var_deps) and cross-variable deps (cross_deps) and outputs dot file
 def make_dot():
+    dot_output = open("flow_diagram.dot", 'w')
+
     # first print standard DOT file lines
-    print "strict digraph G {\nratio=compress;\nconcentrate=true;"
+    dot_output.write("strict digraph G {\nratio=compress;\nconcentrate=true;\n")
 
     # first go through per-variable dependencies and add edges (one write to next)
     for k in var_deps:
@@ -56,11 +58,11 @@ def make_dot():
             if ( x != 0 ): # currently just print the variable,file,line_num
                 curr_parent = k + "," + write_list[x-1].get('script') + "," + write_list[x-1].get('OrigLine')
                 curr_child = k + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
-                print "\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending
+                dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + "\n")
             else:
                 if ( len(write_list) == 1 ):
                     curr_node = k + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
-                    print "\"" + curr_node + "\"" + curr_ending
+                    dot_output.write("\"" + curr_node + "\"" + curr_ending + "\n")
 
     # add edges for cross-var dependencies
     for c in cross_deps:
@@ -71,10 +73,14 @@ def make_dot():
             curr_child = c + "," + var_deps[c][ind].get('script') + "," + var_deps[c][ind].get('OrigLine')
             for pind in cross_deps[c][ind]:
                 curr_parent = pind[0] + "," + var_deps[pind[0]][pind[1]].get('script') + "," + var_deps[pind[0]][pind[1]].get('OrigLine')
-                print "\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending
+                dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + "\n")
 
     # finally, close dot graph
-    print "}"
+    dot_output.write("}")
+    dot_output.close()
+
+    # make graph
+    os.system("dot -Tpdf flow_diagram.dot -o flow_diagram.pdf")
 
 
 # read in original log. while going through, make list of all unique variables (only window for now, not DOM)
@@ -134,6 +140,8 @@ with open(log_file) as f:
             else:
                 raise ValueError("Object (" + curr_script + ") doesn't seem to exist in recorded folder (" + recorded_folder + ")")
 print cross_deps
+
+make_dot()
 # iterate through log (top to bottom) and print out list of source code lines and corresponding ASTs
 #for entry in log:
 #    source_line = get_source_line(entry.get('script'), int(entry.get('OrigLine')))
