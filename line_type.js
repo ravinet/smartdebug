@@ -50,6 +50,8 @@ function findline( node, p ) {
                     parent_vars.push(full_name);
                 } else if ( node.right.type == "BinaryExpression" ) { // have to get the variables we care about from the binary expression
                     binary_expressions( node.right, parent_vars );
+                } else if ( node.right.type == "ObjectExpression" ) {
+                    handle_objects(node.right, parent_vars);
                 }
                 var res = {};
                 if ( node.left.type == "MemberExpression" ) {
@@ -69,6 +71,8 @@ function findline( node, p ) {
                     parent_vars.push(full_name);
                 } else if ( node.init.type == "BinaryExpression" ) { // have to get the variables we care about from the binary expression
                     binary_expressions( node.init, parent_vars );
+                } else if ( node.init.type == "ObjectExpression" ) {
+                    handle_objects(node.init, parent_vars);
                 }
                 var res = {};
                 if ( node.id.type == "MemberExpression" ) {
@@ -114,9 +118,9 @@ function handle_nesting(node,name) {
 
 // takes a Binary Expression node and returns a complete list of all variables that are listed (vars is a list)
 function binary_expressions(node,vars) {
-    // verify that node is nested!
+    // verify that node is a BinaryExpression!
     if ( node.type != "BinaryExpression" ) {
-        throw "binary_expressions() called on node that is not nested!";
+        throw "binary_expressions() called on node that is not a binary expression!";
     }
 
     // left side is JS heap variable
@@ -156,6 +160,64 @@ function binary_expressions(node,vars) {
 
     if ( node.right.type == "BinaryExpression" ) {
         return binary_expressions(node.right, vars);
+    }
+    return vars;
+}
+
+// takes ObjectExpression (potentially nested) and return list of variables inside
+function handle_objects(node,vars) {
+    // verify that node is an object declaration!
+    if ( node.type != "ObjectExpression" ) {
+        throw "handle_objects() called on node that is not an object declaration!";
+    }
+
+    // iterate through each property (key/value) in object
+    for ( var x = 0; x < node.properties.length; x++ ) {
+        // first handle key because it cannot be another object
+        if ( node.properties[x].key.type == "Identifier" ) {
+            if ( vars.indexOf(node.properties[x].key.name) == -1 ) {
+                vars.push( node.properties[x].key.name );
+            }
+        }
+
+        if ( node.properties[x].key.type == "MemberExpression" ) {
+            var curr_name = handle_nesting(node.properties[x].key, "");
+            if ( vars.indexOf(curr_name) == -1 ) {
+                vars.push( curr_name );
+            }
+        }
+
+        // now handle values which can be nested objects
+        if ( node.properties[x].value.type == "Identifier" ) {
+            if ( vars.indexOf(node.properties[x].value.name) == -1 ) {
+                vars.push( node.properties[x].value.name );
+            }
+        }
+
+        if ( node.properties[x].value.type == "MemberExpression" ) {
+            var curr_name = handle_nesting(node.properties[x].value, "");
+            if ( vars.indexOf(curr_name) == -1 ) {
+                vars.push( curr_name );
+            }
+        }
+
+        if ( node.properties[x].value.type == "BinaryExpression" ) {
+            var binary_nest = binary_expressions( node.properties[x].value, []);
+            for (var z = 0; z < binary_nest.length; z++ ) {
+                if ( vars.indexOf(binary_nest[z]) == -1 ) {
+                    vars.push(binary_nest[z]);
+                }
+            }
+        }
+
+        if ( node.properties[x].value.type == "ObjectExpression" ) {
+            var curr_nest = handle_objects(node.properties[x].value, []);
+            for (var y = 0; y < curr_nest.length; y++ ) {
+                if ( vars.indexOf(curr_nest[y]) == -1 ) {
+                    vars.push(curr_nest[y]);
+                }
+            }
+        }
     }
     return vars;
 }
