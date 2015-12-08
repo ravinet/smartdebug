@@ -49,18 +49,7 @@ function findline( node, p ) {
                     var full_name = handle_nesting(node.right, "");
                     parent_vars.push(full_name);
                 } else if ( node.right.type == "BinaryExpression" ) { // have to get the variables we care about from the binary expression
-                    if ( node.right.left.type == 'Identifier' ) {
-                        parent_vars.push(node.right.left.name);
-                    } else if ( node.right.left.type == "MemberExpression" ) {
-                        var full_name = handle_nesting(node.right.left, "");
-                        parent_vars.push(full_name);
-                    }
-                    if ( node.right.right.type == 'Identifier' ) {
-                        parent_vars.push(node.right.right.name);
-                    } else if (node.right.right.type == "MemberExpression" ) {
-                        var full_name = handle_nesting(node.right.right, "");
-                        parent_vars.push(full_name);
-                    }
+                    binary_expressions( node.right, parent_vars );
                 }
                 var res = {};
                 if ( node.left.type == "MemberExpression" ) {
@@ -79,18 +68,7 @@ function findline( node, p ) {
                     var full_name = handle_nesting(node.init, "");
                     parent_vars.push(full_name);
                 } else if ( node.init.type == "BinaryExpression" ) { // have to get the variables we care about from the binary expression
-                    if ( node.init.left.type == 'Identifier' ) {
-                        parent_vars.push(node.init.left.name);
-                    } else if ( node.init.left.type == "MemberExpression" ) {
-                        var full_name = handle_nesting(node.init.left, "");
-                        parent_vars.push(full_name);
-                    }
-                    if ( node.init.right.type == 'Identifier' ) {
-                        parent_vars.push(node.init.right.name);
-                    } else if ( node.init.right.type == "MemberExpression" ) {
-                        var full_name = handle_nesting(node.init.right, "");
-                        parent_vars.push(full_name);
-                    }
+                    binary_expressions( node.init, parent_vars );
                 }
                 var res = {};
                 if ( node.id.type == "MemberExpression" ) {
@@ -101,7 +79,7 @@ function findline( node, p ) {
                 }
                 console.log(res);
             } else {
-                console.log("Unhandled type: " + node.type);
+                //console.log("Unhandled type: " + node.type);
             }
         }
     }
@@ -131,4 +109,53 @@ function handle_nesting(node,name) {
             return name;
         }
     }
+}
+
+
+// takes a Binary Expression node and returns a complete list of all variables that are listed (vars is a list)
+function binary_expressions(node,vars) {
+    // verify that node is nested!
+    if ( node.type != "BinaryExpression" ) {
+        throw "binary_expressions() called on node that is not nested!";
+    }
+
+    // left side is JS heap variable
+    if ( node.left.type == "Identifier" ) {
+        if ( vars.indexOf(node.left.name) == -1 ) {
+            vars.push( node.left.name );
+        }
+    }
+
+    // left side is a multi-part name
+    if ( node.left.type == "MemberExpression" ) {
+        var curr_name = handle_nesting(node.left, "");
+        if ( vars.indexOf(curr_name) == -1 ) {
+            vars.push( curr_name );
+        }
+    }
+
+    // right side is a JS heap variable
+    if ( node.right.type == "Identifier" ) {
+        if ( vars.indexOf(node.right.name) == -1 ) {
+            vars.push( node.right.name );
+        }
+    }
+
+    // right side is a multi-part name
+    if ( node.right.type == "MemberExpression" ) {
+        var curr_name = handle_nesting(node.right, "");
+        if ( vars.indexOf(curr_name) == -1 ) {
+            vars.push( curr_name );
+        }
+    }
+
+    // must recurse because left or right side has nested BinaryExpression
+    if ( node.left.type == "BinaryExpression" ) {
+        return binary_expressions(node.left, vars);
+    }
+
+    if ( node.right.type == "BinaryExpression" ) {
+        return binary_expressions(node.right, vars);
+    }
+    return vars;
 }
