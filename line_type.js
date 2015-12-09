@@ -63,16 +63,18 @@ function findline( node, p ) {
                 console.log(res);
             } else if ( node.type == 'VariableDeclarator' ) { // return (assignment, left_var, right_var)
                 parent_vars = [];
-                // 'id' is left and 'init' is right
-                if ( node.init.type == 'Identifier' ) { // right side is a var so we need to add dep
-                    parent_vars.push(node.init.name);
-                } else if ( node.init.type == "MemberExpression" ) {
-                    var full_name = handle_nesting(node.init, "");
-                    parent_vars.push(full_name);
-                } else if ( node.init.type == "BinaryExpression" ) { // have to get the variables we care about from the binary expression
-                    binary_expressions( node.init, parent_vars );
-                } else if ( node.init.type == "ObjectExpression" ) {
-                    handle_objects(node.init, parent_vars);
+                if ( node.init != null ) {
+                    // 'id' is left and 'init' is right
+                    if ( node.init.type == 'Identifier' ) { // right side is a var so we need to add dep
+                        parent_vars.push(node.init.name);
+                    } else if ( node.init.type == "MemberExpression" ) {
+                        var full_name = handle_nesting(node.init, "");
+                        parent_vars.push(full_name);
+                    } else if ( node.init.type == "BinaryExpression" ) { // have to get the variables we care about from the binary expression
+                        binary_expressions( node.init, parent_vars );
+                    } else if ( node.init.type == "ObjectExpression" ) {
+                        handle_objects(node.init, parent_vars);
+                    }
                 }
                 var res = {};
                 if ( node.id.type == "MemberExpression" ) {
