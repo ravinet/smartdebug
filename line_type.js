@@ -56,6 +56,8 @@ function findline( node, p ) {
                     binary_expressions( node.right, parent_vars );
                 } else if ( node.right.type == "ObjectExpression" ) {
                     handle_objects(node.right, parent_vars);
+                } else if ( node.right.type == "CallExpression" ) {
+                    handle_functions(node.right, parent_vars);
                 }
                 var res = {};
                 if ( node.left.type == "MemberExpression" ) {
@@ -78,7 +80,10 @@ function findline( node, p ) {
                         binary_expressions( node.init, parent_vars );
                     } else if ( node.init.type == "ObjectExpression" ) {
                         handle_objects(node.init, parent_vars);
+                    } else if ( node.init.type == "CallExpression" ) {
+                        handle_functions(node.init, parent_vars);
                     }
+
                 }
                 var res = {};
                 if ( node.id.type == "MemberExpression" ) {
@@ -185,6 +190,26 @@ function binary_expressions(node,vars) {
     return vars;
 }
 
+
+function handle_functions(node,vars) {
+    // verify that node is a function call!
+    if ( node.type != "CallExpression" ) {
+        throw "handle_function() called on node that is not a function call!";
+    }
+
+    // for now, only deal with makeProxy calls (handle the objects within)
+    if ( node.callee.name == "makeProxy" ) {
+        // iterate through each argument and handle
+        // TODO: handle date(), etc.
+        for ( var x = 0; x < node.arguments.length; x++ ) {
+            if ( node.arguments[x].type == "ObjectExpression" ) {
+               handle_objects(node.arguments[x], vars);
+            }
+        }
+    }
+    return vars;
+}
+
 // takes ObjectExpression (potentially nested) and return list of variables inside
 function handle_objects(node,vars) {
     // verify that node is an object declaration!
@@ -229,6 +254,10 @@ function handle_objects(node,vars) {
                     vars.push(binary_nest[z]);
                 }
             }
+        }
+
+        if ( node.properties[x].value.type == "CallExpression" ) {
+            handle_functions(node.properties[x].value, vars);
         }
 
         if ( node.properties[x].value.type == "ObjectExpression" ) {
