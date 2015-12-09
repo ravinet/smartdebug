@@ -1,0 +1,14 @@
+{"OpType":"WRITE","ParentId":"window","PropName":"a","NewValId":"null","OldValId":"null","script":"http://nyc.csail.mit.edu/1.js","OrigLine":"554"}
+{"OpType":"WRITE","ParentId":"window","PropName":"y","NewValId":0,"OldValId":"null","script":"http://nyc.csail.mit.edu/1.js","OrigLine":"555"}
+{"OpType":"WRITE","ParentId":"window","PropName":"c","NewValId":1,"OldValId":"null","script":"http://nyc.csail.mit.edu/1.js","OrigLine":"556"}
+{"OpType":"READ","ParentId":"window","PropName":"a","NewValId":"null","OldValId":"null","script":"http://nyc.csail.mit.edu/1.js","OrigLine":"558"}
+{"OpType":"READ","ParentId":"window","PropName":"c","NewValId":"null","OldValId":1,"script":"http://nyc.csail.mit.edu/1.js","OrigLine":"559"}
+{"OpType":"READ","ParentId":1,"PropName":"x","NewValId":"null","OldValId":"null","script":"http://nyc.csail.mit.edu/1.js","OrigLine":"559"}
+{"OpType":"WRITE","ParentId":"window","PropName":"b","NewValId":3,"OldValId":"null","script":"http://nyc.csail.mit.edu/1.js","OrigLine":"557"}
+{"OpType":"READ","ParentId":"window","PropName":"a","NewValId":"null","OldValId":"null","script":"http://nyc.csail.mit.edu/1.js","OrigLine":"561"}
+{"OpType":"READ","ParentId":"window","PropName":"c","NewValId":"null","OldValId":1,"script":"http://nyc.csail.mit.edu/1.js","OrigLine":"561"}
+{"OpType":"READ","ParentId":1,"PropName":"x","NewValId":"null","OldValId":"null","script":"http://nyc.csail.mit.edu/1.js","OrigLine":"561"}
+{"OpType":"READ","ParentId":"window","PropName":"b","NewValId":"null","OldValId":3,"script":"http://nyc.csail.mit.edu/1.js","OrigLine":"561"}
+{"OpType":"READ","ParentId":3,"PropName":"bye","NewValId":"null","OldValId":2,"script":"http://nyc.csail.mit.edu/1.js","OrigLine":"561"}
+{"OpType":"READ","ParentId":2,"PropName":"test","NewValId":"null","OldValId":"null","script":"http://nyc.csail.mit.edu/1.js","OrigLine":"561"}
+{"OpType":"WRITE","ParentId":"window","PropName":"q","NewValId":"null","OldValId":"null","script":"http://nyc.csail.mit.edu/1.js","OrigLine":"561"}
