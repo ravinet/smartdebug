@@ -18,12 +18,16 @@ if ( type == "line" ) {
 var ast = esprima.parse(code, {loc: true});
 //console.log(JSON.stringify(ast, null, 4));
 
+var overall_deps = {};
+
 var line_num = process.argv[4];
 
 estraverse.traverse(ast, {
     enter: findline,
     leave: done
 });
+
+console.log(overall_deps);
 
 // find the relevant block based on line number and then handle types accordingly
 function findline( node, p ) {
@@ -60,7 +64,7 @@ function findline( node, p ) {
                 } else {
                     res[node.left.name] = parent_vars;
                 }
-                console.log(res);
+                add_deps(res);
             } else if ( node.type == 'VariableDeclarator' ) { // return (assignment, left_var, right_var)
                 parent_vars = [];
                 if ( node.init != null ) {
@@ -83,7 +87,7 @@ function findline( node, p ) {
                 } else {
                     res[node.id.name] = parent_vars;
                 }
-                console.log(res);
+                add_deps(res);
             } else {
                 //console.log("Unhandled type: " + node.type);
             }
@@ -95,6 +99,21 @@ function done() {
     //console.log("DONE");
 }
 
+// function to add dependencies to overall list
+function add_deps(curr_deps) {
+    for ( key in curr_deps ) {
+        if (!(key in overall_deps)) {
+            overall_deps[key] = [];
+        }
+        for (var q = 0; q < curr_deps[key].length; q++ ) {
+            if ( !(curr_deps[key][q] in overall_deps[key] ) ) {
+                overall_deps[key].push(curr_deps[key][q]);
+            }
+        }
+    }
+}
+
+// function to extract nested variable names (e.g., window.a.b)
 function handle_nesting(node,name) {
     // verify that node is nested!
     if ( node.type != "MemberExpression" ) {
