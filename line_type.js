@@ -52,7 +52,7 @@ function findline( node, p ) {
                 } else if ( node.right.type == "MemberExpression" ) {
                     var full_name = handle_nesting(node.right, "");
                     parent_vars.push(full_name);
-                } else if ( node.right.type == "BinaryExpression" ) { // have to get the variables we care about from the binary expression
+                } else if ( (node.right.type == "BinaryExpression") || (node.right.type == "LogicalExpression") ) {
                     binary_expressions( node.right, parent_vars );
                 } else if ( node.right.type == "ObjectExpression" ) {
                     handle_objects(node.right, parent_vars);
@@ -80,7 +80,7 @@ function findline( node, p ) {
                     } else if ( node.init.type == "MemberExpression" ) {
                         var full_name = handle_nesting(node.init, "");
                         parent_vars.push(full_name);
-                    } else if ( node.init.type == "BinaryExpression" ) { // have to get the variables we care about from the binary expression
+                    } else if ( (node.init.type == "BinaryExpression") || (node.init.type == "LogicalExpression") ) {
                         binary_expressions( node.init, parent_vars );
                     } else if ( node.init.type == "ObjectExpression" ) {
                         handle_objects(node.init, parent_vars);
@@ -180,8 +180,8 @@ function unary_expressions(node,vars) {
         }
     }
 
-    // must recurse because left or right side has nested BinaryExpression
-    if ( node.argument.type == "BinaryExpression" ) {
+    // must recurse because left or right side has nested BinaryExpression or LogicalExpression
+    if ( (node.argument.type == "BinaryExpression") || (node.argument.type == "LogicalExpression") ) {
         return binary_expressions(node.argument, vars);
     }
 
@@ -215,9 +215,9 @@ function update_expressions(node,vars) {
 
 // takes a Binary Expression node and returns a complete list of all variables that are listed (vars is a list)
 function binary_expressions(node,vars) {
-    // verify that node is a BinaryExpression!
-    if ( node.type != "BinaryExpression" ) {
-        throw "binary_expressions() called on node that is not a binary expression!";
+    // verify that node is a BinaryExpression or LogicalExpression!
+    if ( (node.type != "BinaryExpression") && (node.type != "LogicalExpression") ) {
+        throw "binary_expressions() called on node that is not a binary nor a expression!";
     }
 
     // left side is JS heap variable
@@ -290,12 +290,12 @@ function binary_expressions(node,vars) {
         }
     }
 
-    // must recurse because left or right side has nested BinaryExpression
-    if ( node.left.type == "BinaryExpression" ) {
+    // must recurse because left or right side has nested BinaryExpression or LogicalExpression
+    if ( (node.left.type == "BinaryExpression") || (node.left.type == "LogicalExpression") ) {
         return binary_expressions(node.left, vars);
     }
 
-    if ( node.right.type == "BinaryExpression" ) {
+    if ( (node.right.type == "BinaryExpression") || (node.right.type == "LogicalExpression") ) {
         return binary_expressions(node.right, vars);
     }
     return vars;
@@ -367,7 +367,7 @@ function handle_objects(node,vars) {
             }
         }
 
-        if ( node.properties[x].value.type == "BinaryExpression" ) {
+        if ( (node.properties[x].value.type == "BinaryExpression") || (node.properties[x].value.type == "LogicalExpression") ) {
             var binary_nest = binary_expressions( node.properties[x].value, []);
             for (var z = 0; z < binary_nest.length; z++ ) {
                 if ( vars.indexOf(binary_nest[z]) == -1 ) {
