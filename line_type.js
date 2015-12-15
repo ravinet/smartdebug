@@ -60,6 +60,8 @@ function findline( node, p ) {
                     handle_functions(node.right, parent_vars);
                 } else if ( node.right.type == "UnaryExpression" ) {
                     unary_expressions( node.right, parent_vars );
+                } else if ( node.right.type == "UpdateExpression" ) {
+                    update_expressions( node.right, parent_vars );
                 }
                 var res = {};
                 if ( node.left.type == "MemberExpression" ) {
@@ -86,6 +88,8 @@ function findline( node, p ) {
                         handle_functions(node.init, parent_vars);
                     } else if (node.init.type == "UnaryExpression" ) {
                         unary_expressions( node.init, parent_vars );
+                    } else if (node.init.type == "UpdateExpression" ) {
+                        update_expressions( node.init, parent_vars );
                     }
                 }
                 var res = {};
@@ -166,9 +170,44 @@ function unary_expressions(node,vars) {
         }
     }
 
+    // update expression
+    if ( node.argument.type == "UpdateExpression" ) {
+        var update_nest = update_expressions( node.argument, []);
+        for (var p = 0; p < update_nest.length; p++ ) {
+            if ( vars.indexOf(update_nest[p]) == -1 ) {
+                vars.push(update_nest[p]);
+            }
+        }
+    }
+
     // must recurse because left or right side has nested BinaryExpression
     if ( node.argument.type == "BinaryExpression" ) {
         return binary_expressions(node.argument, vars);
+    }
+
+    return vars;
+}
+
+// takes an Update Expression node and returns a complete list of all variables that are listed (vars is a list)
+function update_expressions(node,vars) {
+    // verify that node is a UpdateExpression!
+    if ( node.type != "UpdateExpression" ) {
+        throw "update_expressions() called on node that is not a update expression!";
+    }
+
+    // JS heap variable
+    if ( node.argument.type == "Identifier" ) {
+        if ( vars.indexOf(node.argument.name) == -1 ) {
+            vars.push( node.argument.name );
+        }
+    }
+
+    // multi-part name
+    if ( node.argument.type == "MemberExpression" ) {
+        var curr_name = handle_nesting(node.argument, "");
+        if ( vars.indexOf(curr_name) == -1 ) {
+            vars.push( curr_name );
+        }
     }
 
     return vars;
@@ -202,6 +241,26 @@ function binary_expressions(node,vars) {
         for (var m = 0; m < unary_nest.length; m++ ) {
             if ( vars.indexOf(unary_nest[m]) == -1 ) {
                 vars.push(unary_nest[m]);
+            }
+        }
+    }
+
+    // left side is a update expression
+    if ( node.left.type == "UpdateExpression" ) {
+        var update_nest = update_expressions( node.left, []);
+        for (var r = 0; r < update_nest.length; r++ ) {
+            if ( vars.indexOf(update_nest[r]) == -1 ) {
+                vars.push(update_nest[r]);
+            }
+        }
+    }
+
+    // right side is a update expression
+    if ( node.right.type == "UpdateExpression" ) {
+        var update_nest = update_expressions( node.right, []);
+        for (var p = 0; p < update_nest.length; p++ ) {
+            if ( vars.indexOf(update_nest[p]) == -1 ) {
+                vars.push(update_nest[p]);
             }
         }
     }
