@@ -455,11 +455,21 @@ function binary_expressions(node,vars) {
 
     // must recurse because left or right side has nested BinaryExpression or LogicalExpression
     if ( (node.left.type == "BinaryExpression") || (node.left.type == "LogicalExpression") ) {
-        return binary_expressions(node.left, vars);
+        var bin_nest = binary_expressions( node.left, []);
+        for (var ty = 0; ty < bin_nest.length; ty++ ) {
+            if ( vars.indexOf(bin_nest[ty]) == -1 ) {
+                vars.push(bin_nest[ty]);
+            }
+        }
     }
 
     if ( (node.right.type == "BinaryExpression") || (node.right.type == "LogicalExpression") ) {
-        return binary_expressions(node.right, vars);
+        var bin_nest = binary_expressions( node.right, []);
+        for (var uy = 0; uy < bin_nest.length; uy++ ) {
+            if ( vars.indexOf(bin_nest[uy]) == -1 ) {
+                vars.push(bin_nest[uy]);
+            }
+        }
     }
     return vars;
 }
