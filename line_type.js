@@ -62,6 +62,8 @@ function findline( node, p ) {
                     unary_expressions( node.right, parent_vars );
                 } else if ( node.right.type == "UpdateExpression" ) {
                     update_expressions( node.right, parent_vars );
+                } else if ( node.right.type == "ConditionalExpression" ) {
+                    conditional_expressions( node.right, parent_vars );
                 }
                 var res = {};
                 if ( node.left.type == "MemberExpression" ) {
@@ -90,6 +92,8 @@ function findline( node, p ) {
                         unary_expressions( node.init, parent_vars );
                     } else if (node.init.type == "UpdateExpression" ) {
                         update_expressions( node.init, parent_vars );
+                    } else if (node.init.type == "ConditionalExpression" ) {
+                        conditional_expressions( node.init, parent_vars );
                     }
                 }
                 var res = {};
@@ -180,9 +184,14 @@ function unary_expressions(node,vars) {
         }
     }
 
-    // must recurse because left or right side has nested BinaryExpression or LogicalExpression
+    // binary or logical expression
     if ( (node.argument.type == "BinaryExpression") || (node.argument.type == "LogicalExpression") ) {
         return binary_expressions(node.argument, vars);
+    }
+
+    // conditional expression
+    if ( node.argument.type == "ConditionalExpression" ) {
+        return conditional_expressions(node.argument, vars);
     }
 
     return vars;
@@ -210,6 +219,140 @@ function update_expressions(node,vars) {
         }
     }
 
+    return vars;
+}
+
+// takes a Conditional Expression node and returns a complete list of all variables that are listed (vars is a list)
+function conditional_expressions(node,vars) {
+    // verify that node is a ConditionalExpression!
+    if ( node.type != "ConditionalExpression" ) {
+        throw "conditional_expressions() called on node that is not a conditional (turnary) expression!";
+    }
+
+    // first handle the condition
+    if ( node.test.type == "Identifier" ) {
+        if ( vars.indexOf(node.test.name) == -1 ) {
+            vars.push( node.argument.name );
+        }
+    }
+
+    if ( node.test.type == "UnaryExpression" ) {
+        var unary_nest = unary_expressions( node.test, []);
+        for (var b = 0; m < unary_nest.length; b++ ) {
+            if ( vars.indexOf(unary_nest[b]) == -1 ) {
+                vars.push(unary_nest[b]);
+            }
+        }
+    }
+    if ( (node.test.type == "LogicalExpression") || (node.test.type == "BinaryExpression") ) {
+        var logical_nest = binary_expressions( node.test, []);
+        for (var z = 0; z < logical_nest.length; z++ ) {
+            if ( vars.indexOf(logical_nest[z]) == -1 ) {
+                vars.push(logical_nest[z]);
+            }
+        }
+    }
+
+    // now handle first possible value (consequent)
+    if ( node.consequent.type == "Identifier" ) {
+        if ( vars.indexOf(node.consequent.name) == -1 ) {
+            vars.push( node.consequent.name );
+        }
+    }
+
+    if ( (node.consequent.type == "LogicalExpression") || (node.consequent.type == "BinaryExpression") ) {
+        var logical_nest = binary_expressions( node.consequent, []);
+        for (var y = 0; y < logical_nest.length; y++ ) {
+            if ( vars.indexOf(logical_nest[y]) == -1 ) {
+                vars.push(logical_nest[y]);
+            }
+        }
+    }
+
+    if ( node.consequent.type == "MemberExpression" ) {
+        var curr_name = handle_nesting(node.consequent, "");
+        if ( vars.indexOf(curr_name) == -1 ) {
+            vars.push( curr_name );
+        }
+    }
+
+    if ( node.consequent.type == "UnaryExpression" ) {
+        var unary_nest = unary_expressions( node.consequent, []);
+        for (var m = 0; m < unary_nest.length; m++ ) {
+            if ( vars.indexOf(unary_nest[m]) == -1 ) {
+                vars.push(unary_nest[m]);
+            }
+        }
+    }
+
+    if ( node.consequent.type == "UpdateExpression" ) {
+        var update_nest = update_expressions( node.consequent, []);
+        for (var r = 0; r < update_nest.length; r++ ) {
+            if ( vars.indexOf(update_nest[r]) == -1 ) {
+                vars.push(update_nest[r]);
+            }
+        }
+    }
+
+    if ( node.consequent.type == "ConditionalExpression" ) {
+        var nested_cond = conditional_expressions(node.consequent, []);
+        for (var tt = 0; tt < nested_cond.length; tt++ ) {
+            if ( vars.indexOf(nested_cond[tt]) == -1 ) {
+                vars.push(nested_cond[tt]);
+            }
+        }
+    }
+
+
+    // now handle the other possible value (alternate)
+    if ( node.alternate.type == "Identifier" ) {
+        if ( vars.indexOf(node.alternate.name) == -1 ) {
+            vars.push( node.alternate.name );
+        }
+    }
+
+    if ( (node.alternate.type == "LogicalExpression") || (node.alternate.type == "BinaryExpression") ) {
+        var logical_nest = binary_expressions( node.alternate, []);
+        for (var y = 0; y < logical_nest.length; y++ ) {
+            if ( vars.indexOf(logical_nest[y]) == -1 ) {
+                vars.push(logical_nest[y]);
+            }
+        }
+    }
+
+    if ( node.alternate.type == "MemberExpression" ) {
+        var curr_name = handle_nesting(node.alternate, "");
+        if ( vars.indexOf(curr_name) == -1 ) {
+            vars.push( curr_name );
+        }
+    }
+
+    if ( node.alternate.type == "UnaryExpression" ) {
+        var unary_nest = unary_expressions( node.alternate, []);
+        for (var m = 0; m < unary_nest.length; m++ ) {
+            if ( vars.indexOf(unary_nest[m]) == -1 ) {
+                vars.push(unary_nest[m]);
+            }
+        }
+    }
+
+    if ( node.alternate.type == "UpdateExpression" ) {
+        var update_nest = update_expressions( node.alternate, []);
+        for (var r = 0; r < update_nest.length; r++ ) {
+            if ( vars.indexOf(update_nest[r]) == -1 ) {
+                vars.push(update_nest[r]);
+            }
+        }
+    }
+
+    if ( node.alternate.type == "ConditionalExpression" ) {
+        var nested_cond = conditional_expressions(node.alternate, []);
+        for (var tt = 0; tt < nested_cond.length; tt++ ) {
+            if ( vars.indexOf(nested_cond[tt]) == -1 ) {
+                vars.push(nested_cond[tt]);
+            }
+        }
+    }
     return vars;
 }
 
@@ -241,6 +384,16 @@ function binary_expressions(node,vars) {
         for (var m = 0; m < unary_nest.length; m++ ) {
             if ( vars.indexOf(unary_nest[m]) == -1 ) {
                 vars.push(unary_nest[m]);
+            }
+        }
+    }
+
+    // left side is a conditional expression
+    if ( node.left.type == "ConditionalExpression" ) {
+        var cond_nest = conditional_expressions( node.left, []);
+        for (var rr = 0; rr < cond_nest.length; rr++ ) {
+            if ( vars.indexOf(cond_nest[rr]) == -1 ) {
+                vars.push(cond_nest[rr]);
             }
         }
     }
@@ -287,6 +440,16 @@ function binary_expressions(node,vars) {
         var curr_name = handle_nesting(node.right, "");
         if ( vars.indexOf(curr_name) == -1 ) {
             vars.push( curr_name );
+        }
+    }
+
+    // right side is a conditional expression
+    if ( node.right.type == "ConditionalExpression" ) {
+        var cond_nest = conditional_expressions( node.right, []);
+        for (var rt = 0; rt < cond_nest.length; rt++ ) {
+            if ( vars.indexOf(cond_nest[rt]) == -1 ) {
+                vars.push(cond_nest[rt]);
+            }
         }
     }
 
@@ -372,6 +535,15 @@ function handle_objects(node,vars) {
             for (var z = 0; z < binary_nest.length; z++ ) {
                 if ( vars.indexOf(binary_nest[z]) == -1 ) {
                     vars.push(binary_nest[z]);
+                }
+            }
+        }
+
+        if ( node.properties[x].value.type == "ConditionalExpression" ) {
+            var cond_nest = conditional_expressions( node.properties[x].value, []);
+            for (var zz = 0; zz < cond_nest.length; zz++ ) {
+                if ( vars.indexOf(cond_nest[zz]) == -1 ) {
+                    vars.push(cond_nest[zz]);
                 }
             }
         }
