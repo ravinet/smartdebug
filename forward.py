@@ -122,17 +122,18 @@ with open(log_file) as f:
                                 curr_dep = dep
                                 if ( dep[0:7] == "window." ):
                                     curr_dep = dep[7:]
-                                # only care about this if curr_dep is in var_deps (otherwise it is a local var)
-                                if ( (curr_dep in var_deps) ):
-                                    if curr_key not in cross_deps:
-                                        cross_deps[curr_key] = {}
-                                    curr_key_line = len(var_deps[curr_key])-1
-                                    if ( curr_key_line not in cross_deps[curr_key] ):
-                                        cross_deps[curr_key][curr_key_line] = []
-                                    len_dep = len(var_deps[curr_dep])-1
-                                    dep_tuple = (curr_dep, len_dep)
-                                    if ( dep_tuple not in cross_deps[curr_key][curr_key_line] ):
-                                        cross_deps[curr_key][curr_key_line].append(dep_tuple)
+                                if ( curr_dep != curr_key ): # only care if variable is not the same!
+                                    # only care about this if curr_dep is in var_deps (otherwise it is a local var)
+                                    if ( (curr_dep in var_deps) ):
+                                        if curr_key not in cross_deps:
+                                            cross_deps[curr_key] = {}
+                                        curr_key_line = len(var_deps[curr_key])-1
+                                        if ( curr_key_line not in cross_deps[curr_key] ):
+                                            cross_deps[curr_key][curr_key_line] = []
+                                        len_dep = len(var_deps[curr_dep])-1
+                                        dep_tuple = (curr_dep, len_dep)
+                                        if ( dep_tuple not in cross_deps[curr_key][curr_key_line] ):
+                                            cross_deps[curr_key][curr_key_line].append(dep_tuple)
                 # if "window.", strip it since logs don't list this
                 print curr_line
                 print out
