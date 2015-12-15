@@ -58,6 +58,8 @@ function findline( node, p ) {
                     handle_objects(node.right, parent_vars);
                 } else if ( node.right.type == "CallExpression" ) {
                     handle_functions(node.right, parent_vars);
+                } else if ( node.right.type == "UnaryExpression" ) {
+                    unary_expressions( node.right, parent_vars );
                 }
                 var res = {};
                 if ( node.left.type == "MemberExpression" ) {
@@ -82,8 +84,9 @@ function findline( node, p ) {
                         handle_objects(node.init, parent_vars);
                     } else if ( node.init.type == "CallExpression" ) {
                         handle_functions(node.init, parent_vars);
+                    } else if (node.init.type == "UnaryExpression" ) {
+                        unary_expressions( node.init, parent_vars );
                     }
-
                 }
                 var res = {};
                 if ( node.id.type == "MemberExpression" ) {
@@ -141,6 +144,35 @@ function handle_nesting(node,name) {
     }
 }
 
+// takes a Unary Expression node and returns a complete list of all variables that are listed (vars is a list)
+function unary_expressions(node,vars) {
+    // verify that node is a UnaryExpression!
+    if ( node.type != "UnaryExpression" ) {
+        throw "unary_expressions() called on node that is not a unary expression!";
+    }
+
+    // JS heap variable
+    if ( node.argument.type == "Identifier" ) {
+        if ( vars.indexOf(node.argument.name) == -1 ) {
+            vars.push( node.argument.name );
+        }
+    }
+
+    // multi-part name
+    if ( node.argument.type == "MemberExpression" ) {
+        var curr_name = handle_nesting(node.argument, "");
+        if ( vars.indexOf(curr_name) == -1 ) {
+            vars.push( curr_name );
+        }
+    }
+
+    // must recurse because left or right side has nested BinaryExpression
+    if ( node.argument.type == "BinaryExpression" ) {
+        return binary_expressions(node.argument, vars);
+    }
+
+    return vars;
+}
 
 // takes a Binary Expression node and returns a complete list of all variables that are listed (vars is a list)
 function binary_expressions(node,vars) {
@@ -161,6 +193,26 @@ function binary_expressions(node,vars) {
         var curr_name = handle_nesting(node.left, "");
         if ( vars.indexOf(curr_name) == -1 ) {
             vars.push( curr_name );
+        }
+    }
+
+    // left side is a unary expression
+    if ( node.left.type == "UnaryExpression" ) {
+        var unary_nest = unary_expressions( node.left, []);
+        for (var m = 0; m < unary_nest.length; m++ ) {
+            if ( vars.indexOf(unary_nest[m]) == -1 ) {
+                vars.push(unary_nest[m]);
+            }
+        }
+    }
+
+    // right side is a unary expression
+    if ( node.right.type == "UnaryExpression" ) {
+        var unary_nest = unary_expressions( node.right, []);
+        for (var z = 0; z < unary_nest.length; z++ ) {
+            if ( vars.indexOf(unary_nest[z]) == -1 ) {
+                vars.push(unary_nest[z]);
+            }
         }
     }
 
@@ -237,6 +289,15 @@ function handle_objects(node,vars) {
         if ( node.properties[x].value.type == "Identifier" ) {
             if ( vars.indexOf(node.properties[x].value.name) == -1 ) {
                 vars.push( node.properties[x].value.name );
+            }
+        }
+
+        if ( node.properties[x].value.type == "UnaryExpression" ) {
+            var unary_nest = unary_expressions( node.properties[x].value, []);
+            for (var q = 0; q < unary_nest.length; q++ ) {
+                if ( vars.indexOf(unary_nest[q]) == -1 ) {
+                    vars.push(unary_nest[q]);
+                }
             }
         }
 
