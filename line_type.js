@@ -111,9 +111,7 @@ function findline( node, p ) {
     }
 }
 
-function done() {
-    //console.log("DONE");
-}
+function done() {}
 
 // function to add dependencies to overall list
 function add_deps(curr_deps) {
