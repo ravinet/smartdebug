@@ -29,6 +29,60 @@ estraverse.traverse(ast, {
 
 console.log(overall_deps);
 
+function handle_assignment (node,parent_vars) {
+    // verify that node is an AssignmentExpression!
+    if ( node.type != "AssignmentExpression" ) {
+        throw "handle_assignment() called on node that is not an assignment expression!";
+    }
+
+    // 'id' is left and 'init' is right
+    if ( node.right.type == 'Identifier' ) { // right side is a var so we need to add dep
+        parent_vars.push(node.right.name);
+    } else if ( node.right.type == "MemberExpression" ) {
+        var full_name = handle_nesting(node.right, "");
+        parent_vars.push(full_name);
+    } else if ( (node.right.type == "BinaryExpression") || (node.right.type == "LogicalExpression") ) {
+        binary_expressions( node.right, parent_vars );
+    } else if ( node.right.type == "ObjectExpression" ) {
+        handle_objects(node.right, parent_vars);
+    } else if ( node.right.type == "CallExpression" ) {
+        handle_functions(node.right, parent_vars);
+    } else if ( node.right.type == "UnaryExpression" ) {
+        unary_expressions( node.right, parent_vars );
+    } else if ( node.right.type == "UpdateExpression" ) {
+        update_expressions( node.right, parent_vars );
+    } else if ( node.right.type == "ConditionalExpression" ) {
+        conditional_expressions( node.right, parent_vars );
+    }
+}
+
+function handle_declaration (node, parentvars) {
+    // verify that node is an AssignmentExpression!
+    if ( node.type != "VariableDeclarator" ) {
+        throw "handle_declaration() called on node that is not a variable declarator!";
+    }
+
+    // 'id' is left and 'init' is right
+    if ( node.init.type == 'Identifier' ) { // right side is a var so we need to add dep
+        parent_vars.push(node.init.name);
+    } else if ( node.init.type == "MemberExpression" ) {
+        var full_name = handle_nesting(node.init, "");
+        parent_vars.push(full_name);
+    } else if ( (node.init.type == "BinaryExpression") || (node.init.type == "LogicalExpression") ) {
+        binary_expressions( node.init, parent_vars );
+    } else if ( node.init.type == "ObjectExpression" ) {
+        handle_objects(node.init, parent_vars);
+    } else if ( node.init.type == "CallExpression" ) {
+        handle_functions(node.init, parent_vars);
+    } else if (node.init.type == "UnaryExpression" ) {
+        unary_expressions( node.init, parent_vars );
+    } else if (node.init.type == "UpdateExpression" ) {
+        update_expressions( node.init, parent_vars );
+    } else if (node.init.type == "ConditionalExpression" ) {
+        conditional_expressions( node.init, parent_vars );
+    }
+}
+
 // find the relevant block based on line number and then handle types accordingly
 function findline( node, p ) {
     // first check if the line number is even in the program
@@ -43,28 +97,10 @@ function findline( node, p ) {
     // only do something if the line number is correct!
     if ( "loc" in node ) {
         if ( node.loc.start.line == line_num ) {
+            parent_vars = [];
             // first detect specific types (e.g., AssignmentExpression) and then traverse up parent if any info is needed
             if ( node.type == "AssignmentExpression" ) {
-                parent_vars = [];
-                // 'id' is left and 'init' is right
-                if ( node.right.type == 'Identifier' ) { // right side is a var so we need to add dep
-                    parent_vars.push(node.right.name);
-                } else if ( node.right.type == "MemberExpression" ) {
-                    var full_name = handle_nesting(node.right, "");
-                    parent_vars.push(full_name);
-                } else if ( (node.right.type == "BinaryExpression") || (node.right.type == "LogicalExpression") ) {
-                    binary_expressions( node.right, parent_vars );
-                } else if ( node.right.type == "ObjectExpression" ) {
-                    handle_objects(node.right, parent_vars);
-                } else if ( node.right.type == "CallExpression" ) {
-                    handle_functions(node.right, parent_vars);
-                } else if ( node.right.type == "UnaryExpression" ) {
-                    unary_expressions( node.right, parent_vars );
-                } else if ( node.right.type == "UpdateExpression" ) {
-                    update_expressions( node.right, parent_vars );
-                } else if ( node.right.type == "ConditionalExpression" ) {
-                    conditional_expressions( node.right, parent_vars );
-                }
+                handle_assignment(node, parent_vars);
                 var res = {};
                 if ( node.left.type == "MemberExpression" ) {
                     var full_name = handle_nesting(node.left, "");
@@ -74,27 +110,8 @@ function findline( node, p ) {
                 }
                 add_deps(res);
             } else if ( node.type == 'VariableDeclarator' ) { // return (assignment, left_var, right_var)
-                parent_vars = [];
                 if ( node.init != null ) {
-                    // 'id' is left and 'init' is right
-                    if ( node.init.type == 'Identifier' ) { // right side is a var so we need to add dep
-                        parent_vars.push(node.init.name);
-                    } else if ( node.init.type == "MemberExpression" ) {
-                        var full_name = handle_nesting(node.init, "");
-                        parent_vars.push(full_name);
-                    } else if ( (node.init.type == "BinaryExpression") || (node.init.type == "LogicalExpression") ) {
-                        binary_expressions( node.init, parent_vars );
-                    } else if ( node.init.type == "ObjectExpression" ) {
-                        handle_objects(node.init, parent_vars);
-                    } else if ( node.init.type == "CallExpression" ) {
-                        handle_functions(node.init, parent_vars);
-                    } else if (node.init.type == "UnaryExpression" ) {
-                        unary_expressions( node.init, parent_vars );
-                    } else if (node.init.type == "UpdateExpression" ) {
-                        update_expressions( node.init, parent_vars );
-                    } else if (node.init.type == "ConditionalExpression" ) {
-                        conditional_expressions( node.init, parent_vars );
-                    }
+                    handle_declaration(node, parent_vars);
                 }
                 var res = {};
                 if ( node.id.type == "MemberExpression" ) {
