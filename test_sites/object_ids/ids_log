@@ -1,0 +1,5 @@
+{"OpType":"WRITE","ParentId":"window","PropName":"x","NewValId":0,"OldValId":"null","script":"http://nyc.csail.mit.edu/1.js","OrigLine":"554"}
+{"OpType":"READ","ParentId":"window","PropName":"x","NewValId":"null","OldValId":0,"script":"http://nyc.csail.mit.edu/1.js","OrigLine":"555"}
+{"OpType":"WRITE","ParentId":"window","PropName":"y","NewValId":0,"OldValId":"null","script":"http://nyc.csail.mit.edu/1.js","OrigLine":"555"}
+{"OpType":"READ","ParentId":"window","PropName":"y","NewValId":"null","OldValId":0,"script":"http://nyc.csail.mit.edu/1.js","OrigLine":"556"}
+{"OpType":"WRITE","ParentId":0,"PropName":"hi","NewValId":"null","OldValId":"null","script":"http://nyc.csail.mit.edu/1.js","OrigLine":"556"}
