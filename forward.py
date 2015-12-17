@@ -92,6 +92,9 @@ var_deps = {}
 cross_deps = {}
 # dictionary of ASTs (key is filename, value is AST)
 asts = {}
+# dictionary mapping object id's to JS heap variable names
+obj_map = {}
+
 with open(log_file) as f:
     for line in f:
         curr_line = json.loads(line.strip("\n"))
@@ -100,48 +103,67 @@ with open(log_file) as f:
         if ( curr_var not in var_deps ):
             var_deps[curr_var] = []
         if ( curr_line.get('OpType') == 'WRITE' ):
-            var_deps[curr_var].append(curr_line)
-            curr_script = curr_line.get('script')
-            # first get the file as plaintext (if it exists)
-            if ( get_source_file(curr_script) ):
-                cmd = "nodejs line_type.js file temp_file " + curr_line.get('OrigLine')
-                proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
-                (out, err) = proc.communicate()
-                out_json = json.loads(out.strip("\n").replace("\'", '"'))
-                # there could be some relevant deps!
-                # for now we are only considering writes b/c with assignments read precedes write for same line
-                # and we want the write to be already listed for left side variable!
-                if (len(out_json.keys()) > 0 ):
-                    for key in out_json:
-                        curr_key = key
-                        if ( curr_key[0:7] == "window." ):
-                            curr_key = curr_key[7:]
-                        # only care about this if curr_key is in var_deps (otherwise it is a local var)
-                        if ( curr_key in var_deps ):
-                            for dep in out_json[key]:
-                                curr_dep = dep
-                                if ( dep[0:7] == "window." ):
-                                    curr_dep = dep[7:]
-                                if ( curr_dep != curr_key ): # only care if variable is not the same!
-                                    # only care about this if curr_dep is in var_deps (otherwise it is a local var)
-                                    if ( (curr_dep in var_deps) ):
-                                        if curr_key not in cross_deps:
-                                            cross_deps[curr_key] = {}
-                                        curr_key_line = len(var_deps[curr_key])-1
-                                        if ( curr_key_line not in cross_deps[curr_key] ):
-                                            cross_deps[curr_key][curr_key_line] = []
-                                        len_dep = len(var_deps[curr_dep])-1
-                                        dep_tuple = (curr_dep, len_dep)
-                                        if ( dep_tuple not in cross_deps[curr_key][curr_key_line] ):
-                                            cross_deps[curr_key][curr_key_line].append(dep_tuple)
-                # if "window.", strip it since logs don't list this
-                print curr_line
-                print out
-                print "\n"
-                #asts[curr_script] = out
-                os.system("rm temp_file")
+            parent_obj_id = curr_line.get('ParentId')
+            if ( parent_obj_id in obj_map ):
+                # consider this a write on each of those variables!
+                for pastvar in obj_map[parent_obj_id]:
+                    var_deps[pastvar].append(curr_line)
             else:
-                raise ValueError("Object (" + curr_script + ") doesn't seem to exist in recorded folder (" + recorded_folder + ")")
+                new_obj_id = curr_line.get('NewValId')
+                if ( new_obj_id != "null" ):
+                    if ( new_obj_id not in obj_map ):
+                        obj_map[new_obj_id] = []
+                    obj_map[new_obj_id].append(curr_line.get('PropName'))
+                var_deps[curr_var].append(curr_line)
+                curr_script = curr_line.get('script')
+                # first get the file as plaintext (if it exists)
+                if ( get_source_file(curr_script) ):
+                    cmd = "nodejs line_type.js file temp_file " + curr_line.get('OrigLine')
+                    proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
+                    (out, err) = proc.communicate()
+                    out_json = json.loads(out.strip("\n").replace("\'", '"'))
+                    # there could be some relevant deps!
+                    # for now we are only considering writes b/c with assignments read precedes write for same line
+                    # and we want the write to be already listed for left side variable!
+                    if (len(out_json.keys()) > 0 ):
+                        for key in out_json:
+                            curr_key = key
+                            if ( curr_key[0:7] == "window." ):
+                                curr_key = curr_key[7:]
+                            # only care about this if curr_key is in var_deps (otherwise it is a local var)
+                            if ( curr_key in var_deps ):
+                                for dep in out_json[key]:
+                                    curr_dep = dep
+                                    if ( dep[0:7] == "window." ):
+                                        curr_dep = dep[7:]
+                                    if ( curr_dep != curr_key ): # only care if variable is not the same!
+                                        # only care about this if curr_dep is in var_deps (otherwise it is a local var)
+                                        if ( (curr_dep in var_deps) ):
+                                            if curr_key not in cross_deps:
+                                                cross_deps[curr_key] = {}
+                                            curr_key_line = len(var_deps[curr_key])-1
+                                            if ( curr_key_line not in cross_deps[curr_key] ):
+                                                cross_deps[curr_key][curr_key_line] = []
+                                            len_dep = len(var_deps[curr_dep])-1
+                                            dep_tuple = (curr_dep, len_dep)
+                                            if ( dep_tuple not in cross_deps[curr_key][curr_key_line] ):
+                                                cross_deps[curr_key][curr_key_line].append(dep_tuple)
+
+                            # TODO: use object mapping to add appropriate dependencies (e.g. if different var names refer to same heap object)
+                            # we have a dictionary of dependencies by var names that come back...we only want to add edges based on obj ids for the variables that pertain to these objects (e.g. if line has comma)
+                            # one approach is to go through the list of deps and if any dep is in the obj mapping, then add an edge from that var and all other obj id vars to the new thing?
+                            # we could also simply go through the writes (as we do now) and each time we have a write, we we can check to see if there is a parent id and if yes then we can add a dep
+                            # OR anytime we have a write that has a parent id then we can simply add writes to all vars that map to that parent id?
+
+
+                    # if "window.", strip it since logs don't list this
+                    print curr_line
+                    print out
+                    print "\n"
+                    #asts[curr_script] = out
+                    os.system("rm temp_file")
+                else:
+                    raise ValueError("Object (" + curr_script + ") doesn't seem to exist in recorded folder (" + recorded_folder + ")")
 print cross_deps
 
 make_dot()
@@ -153,3 +175,4 @@ make_dot()
 #    (out, err) = proc.communicate()
 #    print source_line + "\n"
 #    print out + "\n\n"
+print obj_map
