@@ -1,4 +1,4 @@
-import os, sys, subprocess, json
+import os, sys, subprocess, json, random
 
 log_file = sys.argv[1]
 recorded_folder = sys.argv[2]
@@ -50,19 +50,20 @@ def make_dot():
 
     # first go through per-variable dependencies and add edges (one write to next)
     for k in var_deps:
-        curr_ending = ";"
-        if ( k == imp_var ):
-            curr_ending = "[color=red];"
-        write_list = var_deps[k]
-        for x in range(0, len(write_list)):
-            if ( x != 0 ): # currently just print the variable,file,line_num
-                curr_parent = k + "," + write_list[x-1].get('script') + "," + write_list[x-1].get('OrigLine')
-                curr_child = k + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
-                dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + "\n")
-            else:
-                if ( len(write_list) == 1 ):
-                    curr_node = k + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
-                    dot_output.write("\"" + curr_node + "\"" + curr_ending + "\n")
+        if ( 'maybelocal_' not in k ):
+            curr_ending = ";"
+            if ( k == imp_var ):
+                curr_ending = "[color=red];"
+            write_list = var_deps[k]
+            for x in range(0, len(write_list)):
+                if ( x != 0 ): # currently just print the variable,file,line_num
+                    curr_parent = k + "," + write_list[x-1].get('script') + "," + write_list[x-1].get('OrigLine')
+                    curr_child = k + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
+                    dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + "\n")
+                else:
+                    if ( len(write_list) == 1 ):
+                        curr_node = k + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
+                        dot_output.write("\"" + curr_node + "\"" + curr_ending + "\n")
 
     # add edges for cross-var dependencies
     for c in cross_deps:
@@ -72,7 +73,12 @@ def make_dot():
         for ind in cross_deps[c]:
             curr_child = c + "," + var_deps[c][ind].get('script') + "," + var_deps[c][ind].get('OrigLine')
             for pind in cross_deps[c][ind]:
-                curr_parent = pind[0] + "," + var_deps[pind[0]][pind[1]].get('script') + "," + var_deps[pind[0]][pind[1]].get('OrigLine')
+                curr_name = pind[0]
+                if ( 'maybelocal_' in pind[0] ):
+                    curr_name = pind[0].split("_")[2]
+                curr_parent = curr_name + "," + var_deps[pind[0]][pind[1]].get('script') + "," + var_deps[pind[0]][pind[1]].get('OrigLine')
+                if ( 'type' in var_deps[pind[0]][pind[1]] ):
+                    curr_parent = "Local Variable: " + curr_parent
                 dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + "\n")
 
     # finally, close dot graph
@@ -138,6 +144,7 @@ with open(log_file) as f:
                                         curr_dep = dep[7:]
                                     if ( curr_dep != curr_key ): # only care if variable is not the same!
                                         # only care about this if curr_dep is in var_deps (otherwise it is a local var)
+                                        # if curr_dep is not in var_deps, then it is a local variable so we should add it to the graph but make note that it is local!
                                         if ( (curr_dep in var_deps) ):
                                             if curr_key not in cross_deps:
                                                 cross_deps[curr_key] = {}
@@ -146,6 +153,18 @@ with open(log_file) as f:
                                                 cross_deps[curr_key][curr_key_line] = []
                                             len_dep = len(var_deps[curr_dep])-1
                                             dep_tuple = (curr_dep, len_dep)
+                                            if ( dep_tuple not in cross_deps[curr_key][curr_key_line] ):
+                                                cross_deps[curr_key][curr_key_line].append(dep_tuple)
+                                        else:
+                                            # this is a local var--create new variable with name maybelocal_randnum_varname (since local vars can have same name)
+                                            local_var_name = "maybelocal_" + str(random.uniform(0,100)) + "_" + curr_dep
+                                            var_deps[local_var_name] = [{'type': 'local', 'name': local_var_name, 'script': curr_script, 'OrigLine': curr_line.get('OrigLine')}]
+                                            if curr_key not in cross_deps:
+                                                cross_deps[curr_key] = {}
+                                            curr_key_line = len(var_deps[curr_key])-1
+                                            if ( curr_key_line not in cross_deps[curr_key] ):
+                                                cross_deps[curr_key][curr_key_line] = []
+                                            dep_tuple = (local_var_name, 0)
                                             if ( dep_tuple not in cross_deps[curr_key][curr_key_line] ):
                                                 cross_deps[curr_key][curr_key_line].append(dep_tuple)
 
