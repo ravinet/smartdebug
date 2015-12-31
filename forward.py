@@ -51,35 +51,56 @@ def make_dot():
     # first go through per-variable dependencies and add edges (one write to next)
     for k in var_deps:
         if ( 'maybelocal_' not in k ):
-            curr_ending = ";"
+            curr_ending = ""
             if ( k == imp_var ):
-                curr_ending = "[color=red];"
+                curr_ending = "[color=red]"
             write_list = var_deps[k]
             for x in range(0, len(write_list)):
-                if ( x != 0 ): # currently just print the variable,file,line_num
-                    curr_parent = k + "," + write_list[x-1].get('script') + "," + write_list[x-1].get('OrigLine')
-                    curr_child = k + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
-                    dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + "\n")
+                if ( x != 0 ): # currently just print the variable,obj_id,file,line_num
+                    parent_id = "null"
+                    child_id = "null"
+                    if ( 'real_id' in write_list[x-1] ):
+                        parent_id = write_list[x-1]['real_id']
+                    if ( 'real_id' in write_list[x] ):
+                        child_id = write_list[x]['real_id']
+                    curr_parent = k + ",id=" + str(parent_id) + "," + write_list[x-1].get('script') + "," + write_list[x-1].get('OrigLine')
+                    curr_child = k + ",id=" + str(child_id) + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
+                    curr_label = ""
+                    if ( 'property' in write_list[x] ): # this write is for an id property, so add a label
+                        curr_label = "[label=\" property '" + write_list[x]['property'] + "'\"]"
+                    dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + curr_label + ";\n")
                 else:
                     if ( len(write_list) == 1 ):
-                        curr_node = k + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
-                        dot_output.write("\"" + curr_node + "\"" + curr_ending + "\n")
+                        single_id = "null"
+                        if ( 'real_id' in write_list[x] ):
+                            single_id = write_list[x]['real_id']
+                        curr_node = k + ",id=" + str(single_id) + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
+                        dot_output.write("\"" + curr_node + "\"" + curr_ending + ";\n")
 
     # add edges for cross-var dependencies
     for c in cross_deps:
-        curr_ending = ";"
+        curr_ending = ""
         if ( c == imp_var ):
-            curr_ending = "[color=red];"
+            curr_ending = "[color=red]"
         for ind in cross_deps[c]:
-            curr_child = c + "," + var_deps[c][ind].get('script') + "," + var_deps[c][ind].get('OrigLine')
+            parent_id = "null"
+            child_id = "null"
+            if ( 'real_id' in var_deps[c][ind] ):
+                child_id = var_deps[c][ind]['real_id']
+            curr_child = c + ",id=" + str(child_id) + "," + var_deps[c][ind].get('script') + "," + var_deps[c][ind].get('OrigLine')
             for pind in cross_deps[c][ind]:
                 curr_name = pind[0]
+                if ( 'real_id' in var_deps[pind[0]][pind[1]] ):
+                    parent_id = var_deps[pind[0]][pind[1]]['real_id']
                 if ( 'maybelocal_' in pind[0] ):
                     curr_name = pind[0].split("_")[2]
-                curr_parent = curr_name + "," + var_deps[pind[0]][pind[1]].get('script') + "," + var_deps[pind[0]][pind[1]].get('OrigLine')
+                curr_parent = curr_name + ",id=" + str(parent_id) + "," + var_deps[pind[0]][pind[1]].get('script') + "," + var_deps[pind[0]][pind[1]].get('OrigLine')
                 if ( 'type' in var_deps[pind[0]][pind[1]] ):
                     curr_parent = "Local Variable: " + curr_parent
-                dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + "\n")
+                curr_label = ""
+                if ( 'property' in var_deps[pind[0]][pind[1]] ): # this write is for an id property, so add a label
+                    curr_label = "[label=\" property '" + var_deps[pind[0]][pind[1]]['property'] + "'\"]"
+                dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + curr_label + ";\n")
 
     # finally, close dot graph
     dot_output.write("}")
@@ -100,6 +121,9 @@ cross_deps = {}
 asts = {}
 # dictionary mapping object id's to JS heap variable names
 obj_map = {}
+# dictionary mapping last instance of each id to a var name
+last_id_name = {}
+
 
 with open(log_file) as f:
     for line in f:
@@ -111,16 +135,23 @@ with open(log_file) as f:
         if ( curr_line.get('OpType') == 'WRITE' ):
             parent_obj_id = curr_line.get('ParentId')
             if ( parent_obj_id in obj_map ):
-                # consider this a write on each of those variables!
-                for pastvar in obj_map[parent_obj_id]:
-                    var_deps[pastvar].append(curr_line)
+                # consider this a write on the last instance of this object we considered (which is this line)
+                # also, adding a property 'property' which lists the property of the id we are modifying and id to print
+                changed_curr_line = curr_line
+                changed_curr_line['property'] = curr_line.get('PropName')
+                changed_curr_line['real_id'] = parent_obj_id
+                var_deps[last_id_name[parent_obj_id]].append(changed_curr_line)
             else:
                 new_obj_id = curr_line.get('NewValId')
                 if ( new_obj_id != "null" ):
                     if ( new_obj_id not in obj_map ):
                         obj_map[new_obj_id] = []
-                    obj_map[new_obj_id].append(curr_line.get('PropName'))
-                var_deps[curr_var].append(curr_line)
+                    # this is now the last instance of this id
+                    last_id_name[new_obj_id] = curr_var
+                    obj_map[new_obj_id].append(curr_var)
+                changed_curr_line = curr_line
+                changed_curr_line['real_id'] = new_obj_id
+                var_deps[curr_var].append(changed_curr_line)
                 curr_script = curr_line.get('script')
                 # first get the file as plaintext (if it exists)
                 if ( get_source_file(curr_script) ):
