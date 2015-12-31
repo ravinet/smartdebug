@@ -187,17 +187,39 @@ with open(log_file) as f:
                                             if ( dep_tuple not in cross_deps[curr_key][curr_key_line] ):
                                                 cross_deps[curr_key][curr_key_line].append(dep_tuple)
                                         else:
-                                            # this is a local var--create new variable with name maybelocal_randnum_varname (since local vars can have same name)
-                                            local_var_name = "maybelocal_" + str(random.uniform(0,100)) + "_" + curr_dep
-                                            var_deps[local_var_name] = [{'type': 'local', 'name': local_var_name, 'script': curr_script, 'OrigLine': curr_line.get('OrigLine')}]
-                                            if curr_key not in cross_deps:
-                                                cross_deps[curr_key] = {}
-                                            curr_key_line = len(var_deps[curr_key])-1
-                                            if ( curr_key_line not in cross_deps[curr_key] ):
-                                                cross_deps[curr_key][curr_key_line] = []
-                                            dep_tuple = (local_var_name, 0)
-                                            if ( dep_tuple not in cross_deps[curr_key][curr_key_line] ):
-                                                cross_deps[curr_key][curr_key_line].append(dep_tuple)
+                                            # this is a local var or a property
+                                            # if local var- create new variable with name maybelocal_randnum_varname (since local vars can have same name)
+                                            # if property- check if top-level variable has an object id, and if so, add real_id and property fields to the json
+                                            if ( "." in curr_dep ):
+                                                top_level_name = curr_dep[0:curr_dep.find(".")]
+                                                prop = curr_dep[curr_dep.find(".")+1:]
+                                                is_obj = False
+                                                rel_id = "null"
+                                                for i in obj_map:
+                                                    for k in obj_map[i]:
+                                                        if ( k == top_level_name ):
+                                                            is_obj = True
+                                                            rel_id = i
+                                                if ( is_obj ): #TODO: NEED TO ADD PROP NAMES TO THE EDGES!!!!
+                                                    if curr_key not in cross_deps:
+                                                        cross_deps[curr_key] = {}
+                                                    if ( curr_key_line not in cross_deps[curr_key] ):
+                                                        cross_deps[curr_key][curr_key_line] = []
+                                                    dep_tuple = (top_level_name, len(var_deps[top_level_name])-1)
+                                                    if ( dep_tuple not in cross_deps[curr_key][curr_key_line] ):
+                                                        cross_deps[curr_key][curr_key_line].append(dep_tuple)
+                                                else:
+                                                    local_var_name = "maybelocal_" + str(random.uniform(0,100)) + "_" + curr_dep
+                                                    var_deps[local_var_name] = [{'type': 'local', 'name': local_var_name, 'script': curr_script, 'OrigLine': curr_line.get('OrigLine')}]
+                                                    if curr_key not in cross_deps:
+                                                        cross_deps[curr_key] = {}
+                                                    curr_key_line = len(var_deps[curr_key])-1
+                                                    if ( curr_key_line not in cross_deps[curr_key] ):
+                                                        cross_deps[curr_key][curr_key_line] = []
+                                                    dep_tuple = (local_var_name, 0)
+                                                    if ( dep_tuple not in cross_deps[curr_key][curr_key_line] ):
+                                                        cross_deps[curr_key][curr_key_line].append(dep_tuple)
+
 
                             # TODO: use object mapping to add appropriate dependencies (e.g. if different var names refer to same heap object)
                             # we have a dictionary of dependencies by var names that come back...we only want to add edges based on obj ids for the variables that pertain to these objects (e.g. if line has comma)
