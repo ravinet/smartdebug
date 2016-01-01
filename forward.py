@@ -100,7 +100,10 @@ def make_dot():
                 curr_label = ""
                 if ( 'property' in var_deps[pind[0]][pind[1]] ): # this write is for an id property, so add a label
                     curr_label = "[label=\" property '" + var_deps[pind[0]][pind[1]]['property'] + "'\"]"
-                dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + curr_label + ";\n")
+                new_curr_label = ""
+                if ( len(pind) == 3 ):
+                    new_curr_label = "[label=\" property '" + pind[2] + "'\"]"
+                dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + curr_label + new_curr_label +  ";\n")
 
     # finally, close dot graph
     dot_output.write("}")
@@ -115,7 +118,7 @@ def make_dot():
 log = []
 # make a dictionary of write deps for each variable (key is var name, value is list of deps)
 var_deps = {}
-# dictionary of cross-variable dependencies (keys are variables and values are dictionaries where keys are index of key var and values are tuples (var, index) of parents)
+# dictionary of cross-variable dependencies (keys are variables and values are dictionaries where keys are index of key var and values are tuples (var, index) of parents..tuples can have third component as object property names)
 cross_deps = {}
 # dictionary of ASTs (key is filename, value is AST)
 asts = {}
@@ -205,7 +208,7 @@ with open(log_file) as f:
                                                         cross_deps[curr_key] = {}
                                                     if ( curr_key_line not in cross_deps[curr_key] ):
                                                         cross_deps[curr_key][curr_key_line] = []
-                                                    dep_tuple = (top_level_name, len(var_deps[top_level_name])-1)
+                                                    dep_tuple = (top_level_name, len(var_deps[top_level_name])-1, prop)
                                                     if ( dep_tuple not in cross_deps[curr_key][curr_key_line] ):
                                                         cross_deps[curr_key][curr_key_line].append(dep_tuple)
                                                 else:
