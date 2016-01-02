@@ -588,3 +588,29 @@ function handle_objects(node,vars) {
     }
     return vars;
 }
+
+// function to handle for statements (return list of dependencies from all three parts)
+// TODO: once we have list of nested for loops above current line, we can process the current line and then process each for statement and add deps to that list
+function handle_fors(node, vars) {
+    console.log("handling fors");
+    // verify that node is a For Statement
+    if ( node.type != "ForStatement" ) {
+        throw "handle_fors() called on node that is not a for statement!!";
+    }
+
+    // handle the assignment (first part of the for statement)
+    if ( node.init.type == "AssignmentExpression" ) {
+        handle_assignment(node.init, vars);
+    }
+
+    // handle the test condition (the second part of the for statement)
+    if ( node.test.type == "BinaryExpression" ) {
+        binary_expressions(node.test, vars);
+    }
+
+    // handle the third part of the assignment (if it is a binary expression and not simply x++)
+    if ( node.update.type == "AssignmentExpression" ) {
+        handle_assignment(node.update, vars);
+    }
+    return vars;
+}
