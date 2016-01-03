@@ -19,6 +19,7 @@ var ast = esprima.parse(code, {loc: true});
 //console.log(JSON.stringify(ast, null, 4));
 
 var overall_deps = {};
+var branch_tests_per_function = [[]];
 
 var line_num = process.argv[4];
 
@@ -94,12 +95,20 @@ function findline( node, p ) {
         }
     }
 
+    if (node.type == "IfStatement" || node.type == "WhileStatement" || node.type == "ForStatement") {
+        branch_tests_per_function[branch_tests_per_function.length-1].push(node.test);
+    }
+    if (node.type == "FunctionDeclaration" || node.type == "FunctionExpression") {
+        branch_tests_per_function.push([]);
+    }
+
     // only do something if the line number is correct!
     if ( "loc" in node ) {
         if ( node.loc.start.line == line_num ) {
             parent_vars = [];
             // first detect specific types (e.g., AssignmentExpression) and then traverse up parent if any info is needed
             if ( node.type == "AssignmentExpression" ) {
+                console.log(branch_tests_per_function[branch_tests_per_function.length-1]);
                 handle_assignment(node, parent_vars);
                 var res = {};
                 if ( node.left.type == "MemberExpression" ) {
@@ -128,7 +137,14 @@ function findline( node, p ) {
     }
 }
 
-function done() {}
+function done(node, p) {
+    if (node.type == "IfStatement" || node.type == "WhileStatement" || node.type == "ForStatement") {
+        branch_tests_per_function[branch_tests_per_function.length-1].pop();
+    }
+    if (node.type == "FunctionExpression" || node.type == "FunctionDeclaration") {
+        branch_tests_per_function.pop();
+    }
+}
 
 // function to add dependencies to overall list
 function add_deps(curr_deps) {
