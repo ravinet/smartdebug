@@ -108,7 +108,6 @@ function findline( node, p ) {
             parent_vars = [];
             // first detect specific types (e.g., AssignmentExpression) and then traverse up parent if any info is needed
             if ( node.type == "AssignmentExpression" ) {
-                console.log(branch_tests_per_function[branch_tests_per_function.length-1]);
                 handle_assignment(node, parent_vars);
                 var res = {};
                 if ( node.left.type == "MemberExpression" ) {
