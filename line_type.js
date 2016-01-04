@@ -642,3 +642,19 @@ function handle_whiles(node, vars) {
 
     return vars;
 }
+
+// function to handle if statements (this includes else ifs)
+// TODO: perhaps we should also take a line number such that we only care if it is before the relevant line number?
+function handle_ifs(node, vars) {
+    // verify that node is a While Statement
+    if ( node.type != "IfStatement" ) {
+        throw "handle_ifs() called on node that is not a if statement!!";
+    }
+
+    // handle the test condition
+    if ( (node.test.type == "BinaryExpression") || (node.test.type == "LogicalExpression") ) {
+        binary_expressions(node.test, vars);
+    }
+
+    return vars;
+}
