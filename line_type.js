@@ -84,6 +84,31 @@ function handle_declaration (node, parentvars) {
     }
 }
 
+// function to go through the relevant scope's branches and add dependencies to each variable (key) in overall_deps
+function branch_dependencies(branches) {
+    var deps = [];
+    for (var x = 0; x < branches.length; x++ ) {
+        if ( branches[x].type == "IfStatement" ) {
+            handle_ifs(branches[x], deps);
+        } else if ( branches[x].type == "WhileStatement" ) {
+            handle_whiles(branches[x], deps);
+        } else if ( branches[x].type == "ForStatement" ) {
+            handle_fors(branches[x], deps);
+        } else {
+            throw "Trying to handle unsupported branch dependency of type: " + branches[x].type;
+        }
+    }
+
+    // add these dependencies to *all* variables in overall_deps (since branches dictate whether or not current line ever happens!)
+    for ( var p = 0; p < deps.length; p++ ) {
+        for (key in overall_deps ) {
+            if ( overall_deps[key].indexOf(deps[p]) == -1 ) {
+                overall_deps[key].push(deps[p]);
+            }
+        }
+    }
+}
+
 // find the relevant block based on line number and then handle types accordingly
 function findline( node, p ) {
     // first check if the line number is even in the program
@@ -96,7 +121,7 @@ function findline( node, p ) {
     }
 
     if (node.type == "IfStatement" || node.type == "WhileStatement" || node.type == "ForStatement") {
-        branch_tests_per_function[branch_tests_per_function.length-1].push(node.test);
+        branch_tests_per_function[branch_tests_per_function.length-1].push(node);
     }
     if (node.type == "FunctionDeclaration" || node.type == "FunctionExpression") {
         branch_tests_per_function.push([]);
@@ -132,6 +157,8 @@ function findline( node, p ) {
             } else {
                 //console.log("Unhandled type: " + node.type);
             }
+            // handle branch dependencies
+            branch_dependencies(branch_tests_per_function[branch_tests_per_function.length-1]);
         }
     }
 }
