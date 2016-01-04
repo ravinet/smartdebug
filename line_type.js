@@ -607,7 +607,6 @@ function handle_objects(node,vars) {
 // function to handle for statements (return list of dependencies from all three parts)
 // TODO: once we have list of nested for loops above current line, we can process the current line and then process each for statement and add deps to that list
 function handle_fors(node, vars) {
-    console.log("handling fors");
     // verify that node is a For Statement
     if ( node.type != "ForStatement" ) {
         throw "handle_fors() called on node that is not a for statement!!";
@@ -619,7 +618,7 @@ function handle_fors(node, vars) {
     }
 
     // handle the test condition (the second part of the for statement)
-    if ( node.test.type == "BinaryExpression" ) {
+    if ( (node.test.type == "BinaryExpression") || (node.test.type == "LogicalExpression") ) {
         binary_expressions(node.test, vars);
     }
 
@@ -627,5 +626,19 @@ function handle_fors(node, vars) {
     if ( node.update.type == "AssignmentExpression" ) {
         handle_assignment(node.update, vars);
     }
+    return vars;
+}
+
+function handle_whiles(node, vars) {
+    // verify that node is a While Statement
+    if ( node.type != "WhileStatement" ) {
+        throw "handle_whiles() called on node that is not a while statement!!";
+    }
+
+    // handle the test condition
+    if ( (node.test.type == "BinaryExpression") || (node.test.type == "LogicalExpression") ) {
+        binary_expressions(node.test, vars);
+    }
+
     return vars;
 }
