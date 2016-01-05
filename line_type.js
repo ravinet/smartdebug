@@ -560,11 +560,17 @@ function handle_objects(node,vars) {
 
     // iterate through each property (key/value) in object
     for ( var x = 0; x < node.properties.length; x++ ) {
+        var prop_name = ""
         // first handle key because it cannot be another object
         if ( node.properties[x].key.type == "Identifier" ) {
+            prop_name = node.properties[x].key.name
             if ( vars.indexOf(node.properties[x].key.name) == -1 ) {
                 vars.push( node.properties[x].key.name );
             }
+        }
+
+        if ( node.properties[x].key.type == "Literal" ) {
+            prop_name = node.properties[x].key.value
         }
 
         if ( node.properties[x].key.type == "MemberExpression" ) {
@@ -593,7 +599,11 @@ function handle_objects(node,vars) {
         if ( node.properties[x].value.type == "MemberExpression" ) {
             var curr_name = handle_nesting(node.properties[x].value, "");
             if ( vars.indexOf(curr_name) == -1 ) {
-                vars.push( curr_name );
+                if ( prop_name == "" ) {
+                    vars.push( curr_name );
+                } else {
+                    vars.push( [curr_name, prop_name] );
+                }
             }
         }
 
