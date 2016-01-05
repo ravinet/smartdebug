@@ -67,7 +67,7 @@ def make_dot():
                     curr_child = k + ",id=" + str(child_id) + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
                     curr_label = ""
                     if ( 'property' in write_list[x] ): # this write is for an id property, so add a label
-                        curr_label = "[label=\" property '" + write_list[x]['property'] + "'\"]"
+                        curr_label = "[label=\"'" + write_list[x]['property'] + "'\"]"
                     dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + curr_label + ";\n")
                 else:
                     if ( len(write_list) == 1 ):
@@ -99,10 +99,15 @@ def make_dot():
                     curr_parent = "Local Variable: " + curr_parent
                 curr_label = ""
                 if ( 'property' in var_deps[pind[0]][pind[1]] ): # this write is for an id property, so add a label
-                    curr_label = "[label=\" property '" + var_deps[pind[0]][pind[1]]['property'] + "'\"]"
+                    curr_label = "[label=\" '" + var_deps[pind[0]][pind[1]]['property'] + "'\"]"
                 new_curr_label = ""
-                if ( len(pind) == 3 ):
-                    new_curr_label = "[label=\" property '" + pind[2] + "'\"]"
+                if ( len(pind) > 2 ):
+                    new_curr_label = "[label=\" '"
+                    for i in range(2, len(pind) ):
+                        new_curr_label = new_curr_label + pind[i]
+                        if ( i != len(pind)-1 ):
+                            new_curr_label = new_curr_label + "\n"
+                    new_curr_label = new_curr_label + "'\"]"
                 dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + curr_label + new_curr_label +  ";\n")
 
     # finally, close dot graph
@@ -178,19 +183,25 @@ with open(log_file) as f:
                         if ( curr_key in var_deps ):
                             for dep in out_json[key]:
                                 curr_dep = dep
-                                if ( dep[0:7] == "window." ):
-                                    curr_dep = dep[7:]
+                                assign_prop = ""
+                                if ( isinstance(dep, list) ):
+                                    curr_dep = dep[0]
+                                    assign_prop = "set: " + dep[1]
+                                if ( curr_dep[0:7] == "window." ):
+                                    curr_dep = curr_dep[7:]
                                 if ( curr_dep != curr_key ): # only care if variable is not the same!
+                                    curr_key_line = len(var_deps[curr_key])-1
                                     # only care about this if curr_dep is in var_deps (otherwise it is a local var)
                                     # if curr_dep is not in var_deps, then it is a local variable so we should add it to the graph but make note that it is local!
                                     if ( (curr_dep in var_deps) ):
                                         if curr_key not in cross_deps:
                                             cross_deps[curr_key] = {}
-                                        curr_key_line = len(var_deps[curr_key])-1
                                         if ( curr_key_line not in cross_deps[curr_key] ):
                                             cross_deps[curr_key][curr_key_line] = []
                                         len_dep = len(var_deps[curr_dep])-1
                                         dep_tuple = (curr_dep, len_dep)
+                                        if ( assign_prop != "" ):
+                                            dep_tuple = (curr_dep, len_dep, assign_prop)
                                         if ( dep_tuple not in cross_deps[curr_key][curr_key_line] ):
                                             cross_deps[curr_key][curr_key_line].append(dep_tuple)
                                     else:
@@ -199,7 +210,7 @@ with open(log_file) as f:
                                         # if property- check if top-level variable has an object id, and if so, add real_id and property fields to the json
                                         if ( "." in curr_dep ):
                                             top_level_name = curr_dep[0:curr_dep.find(".")]
-                                            prop = curr_dep[curr_dep.find(".")+1:]
+                                            prop = "property: " + curr_dep[curr_dep.find(".")+1:]
                                             is_obj = False
                                             rel_id = "null"
                                             for i in obj_map:
@@ -213,6 +224,8 @@ with open(log_file) as f:
                                                 if ( curr_key_line not in cross_deps[curr_key] ):
                                                     cross_deps[curr_key][curr_key_line] = []
                                                 dep_tuple = (top_level_name, len(var_deps[top_level_name])-1, prop)
+                                                if ( assign_prop != "" ):
+                                                    dep_tuple = dep_tuple + (assign_prop,)
                                                 if ( dep_tuple not in cross_deps[curr_key][curr_key_line] ):
                                                     cross_deps[curr_key][curr_key_line].append(dep_tuple)
                                             else:
@@ -245,7 +258,6 @@ with open(log_file) as f:
             else:
                 raise ValueError("Object (" + curr_script + ") doesn't seem to exist in recorded folder (" + recorded_folder + ")")
 print cross_deps
-
 make_dot()
 # iterate through log (top to bottom) and print out list of source code lines and corresponding ASTs
 #for entry in log:
