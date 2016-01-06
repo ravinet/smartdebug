@@ -69,6 +69,11 @@ def make_dot():
                     if ( 'property' in write_list[x] ): # this write is for an id property, so add a label
                         curr_label = "[label=\"'" + write_list[x]['property'] + "'\"]"
                     dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + curr_label + ";\n")
+                    # add node for each new object literal created and add edge to curr_parent with label "set"
+                    if ( write_list[x].get('NewValId') != "null" ):
+                        object_node = write_list[x].get('Value')
+                        label = "[label=\" set\"]"
+                        dot_output.write("\"" + str(object_node) + "\" -> \"" + curr_parent + "\"" + label + ";\n")
                 else:
                     if ( len(write_list) == 1 ):
                         single_id = "null"
@@ -76,6 +81,11 @@ def make_dot():
                             single_id = write_list[x]['real_id']
                         curr_node = k + ",id=" + str(single_id) + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
                         dot_output.write("\"" + curr_node + "\"" + curr_ending + ";\n")
+                        if ( write_list[x].get('NewValId') != "null" ):
+                            object_node = write_list[x].get('Value')
+                            label = "[label=\" set\"]"
+                            dot_output.write("\"" + str(object_node) + "\" -> \"" + curr_node + "\"" + label + ";\n")
+
 
     # add edges for cross-var dependencies
     for c in cross_deps:
@@ -131,7 +141,6 @@ asts = {}
 obj_map = {}
 # dictionary mapping last instance of each id to a var name
 last_id_name = {}
-
 
 with open(log_file) as f:
     for line in f:
