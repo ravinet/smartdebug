@@ -78,27 +78,28 @@ def make_dot():
                             label = "[label=\" set\"]"
                             print "adding for: " + str(object_node)
                             dot_output.write("\"" + str(object_node) + "\" -> \"" + curr_parent + "\"" + label + ";\n")
-                    if ( k in alias_map ):
-                        # iterate through alias map using all properties (split by '.') and add edge from the highest level alias
-                        props = prop_change.split(".")
-                        current_var = k
-                        current_prop = props[0]
-                        prop_counter = 0
-                        alias_info = ""
-                        while ( current_prop in alias_map[current_var] ):
-                            alias_info = alias_map[current_var][current_prop]
-                            current_var = alias_info[0]
-                            prop_counter = prop_counter + 1
-                            if ( prop_counter >= len(props) ):
-                                break
-                            current_prop = props[prop_counter]
-                            if ( current_var not in alias_map ):
-                                break
-                        # create appropriate parent node for alias
-                        if ( alias_info != "" ):
-                            alias_id = var_deps[alias_info[0]][alias_info[1]].get('real_id')
-                            alias_parent = alias_info[0] + ",id=" + str(alias_id) + "," + var_deps[alias_info[0]][alias_info[1]].get('script') + "," + var_deps[alias_info[0]][alias_info[1]].get('OrigLine')
-                            dot_output.write("\"" + alias_parent + "\" -> \"" + curr_child + "\"[style=dotted];\n")
+                    if ( isinstance(write_list[x].get('Value'), dict) ):
+                        if ( k in alias_map ):
+                            # iterate through alias map using all properties (split by '.') and add edge from the highest level alias
+                            props = prop_change.split(".")
+                            current_var = k
+                            current_prop = props[0]
+                            prop_counter = 0
+                            alias_info = ""
+                            while ( current_prop in alias_map[current_var] ):
+                                alias_info = alias_map[current_var][current_prop]
+                                current_var = alias_info[0]
+                                prop_counter = prop_counter + 1
+                                if ( prop_counter >= len(props) ):
+                                    break
+                                current_prop = props[prop_counter]
+                                if ( current_var not in alias_map ):
+                                    break
+                            # create appropriate parent node for alias
+                            if ( alias_info != "" ):
+                                alias_id = var_deps[alias_info[0]][alias_info[1]].get('real_id')
+                                alias_parent = alias_info[0] + ",id=" + str(alias_id) + "," + var_deps[alias_info[0]][alias_info[1]].get('script') + "," + var_deps[alias_info[0]][alias_info[1]].get('OrigLine')
+                                dot_output.write("\"" + alias_parent + "\" -> \"" + curr_child + "\"[style=dotted];\n")
                 else:
                     if ( len(write_list) == 1 ):
                         single_id = "null"
@@ -149,27 +150,29 @@ def make_dot():
                     new_curr_label = new_curr_label + "'\"]"
                 dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + curr_label + new_curr_label +  ";\n")
                 # add dotted edge from original object variable if applicable
-                if ( curr_name in alias_map ):
-                    # iterate through alias map using all properties (split by '.') and add edge from the highest level alias
-                    props = prop_change.split(".")
-                    current_var = curr_name
-                    current_prop = props[0]
-                    prop_counter = 0
-                    alias_info = ""
-                    while ( current_prop in alias_map[current_var] ):
-                        alias_info = alias_map[current_var][current_prop]
-                        current_var = alias_info[0]
-                        prop_counter = prop_counter + 1
-                        if ( prop_counter >= len(props) ):
-                            break
-                        current_prop = props[prop_counter]
-                        if ( current_var not in alias_map ):
-                            break
-                    # create appropriate parent node for alias
-                    if ( alias_info != "" ):
-                        alias_id = var_deps[alias_info[0]][alias_info[1]].get('real_id')
-                        alias_parent = alias_info[0] + ",id=" + str(alias_id) + "," + var_deps[alias_info[0]][alias_info[1]].get('script') + "," + var_deps[alias_info[0]][alias_info[1]].get('OrigLine')
-                        dot_output.write("\"" + alias_parent + "\" -> \"" + curr_child + "\"[style=dotted];\n")
+                # only add alias edges if current line is an object
+                if ( isinstance(var_deps[c][ind].get('Value'), dict) ):
+                    if ( curr_name in alias_map ):
+                        # iterate through alias map using all properties (split by '.') and add edge from the highest level alias
+                        props = prop_change.split(".")
+                        current_var = curr_name
+                        current_prop = props[0]
+                        prop_counter = 0
+                        alias_info = ""
+                        while ( current_prop in alias_map[current_var] ):
+                            alias_info = alias_map[current_var][current_prop]
+                            current_var = alias_info[0]
+                            prop_counter = prop_counter + 1
+                            if ( prop_counter >= len(props) ):
+                                break
+                            current_prop = props[prop_counter]
+                            if ( current_var not in alias_map ):
+                                break
+                        # create appropriate parent node for alias
+                        if ( alias_info != "" ):
+                            alias_id = var_deps[alias_info[0]][alias_info[1]].get('real_id')
+                            alias_parent = alias_info[0] + ",id=" + str(alias_id) + "," + var_deps[alias_info[0]][alias_info[1]].get('script') + "," + var_deps[alias_info[0]][alias_info[1]].get('OrigLine')
+                            dot_output.write("\"" + alias_parent + "\" -> \"" + curr_child + "\"[style=dotted];\n")
 
     # finally, close dot graph
     dot_output.write("}")
