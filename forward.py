@@ -162,7 +162,6 @@ def make_dot():
                         current_prop = props[prop_counter]
                         if ( current_var not in alias_map ):
                             break
-                    print "alias var will be: " + str(current_var)
                     # create appropriate parent node for alias
                     if ( alias_info != "" ):
                         alias_id = var_deps[alias_info[0]][alias_info[1]].get('real_id')
