@@ -66,14 +66,37 @@ def make_dot():
                     curr_parent = k + ",id=" + str(parent_id) + "," + write_list[x-1].get('script') + "," + write_list[x-1].get('OrigLine')
                     curr_child = k + ",id=" + str(child_id) + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
                     curr_label = ""
+                    prop_change = ""
                     if ( 'property' in write_list[x] ): # this write is for an id property, so add a label
                         curr_label = "[label=\"'" + write_list[x]['property'] + "'\"]"
+                        prop_change = write_list[x]['property']
                     dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + curr_label + ";\n")
                     # add node for each new object literal created and add edge to curr_parent with label "set"
                     if ( write_list[x].get('NewValId') != "null" ):
                         object_node = write_list[x].get('Value')
                         label = "[label=\" set\"]"
                         dot_output.write("\"" + str(object_node) + "\" -> \"" + curr_parent + "\"" + label + ";\n")
+                    if ( k in alias_map ):
+                        # iterate through alias map using all properties (split by '.') and add edge from the highest level alias
+                        props = prop_change.split(".")
+                        current_var = k
+                        current_prop = props[0]
+                        prop_counter = 0
+                        alias_info = ""
+                        while ( current_prop in alias_map[current_var] ):
+                            alias_info = alias_map[current_var][current_prop]
+                            current_var = alias_info[0]
+                            prop_counter = prop_counter + 1
+                            if ( prop_counter >= len(props) ):
+                                break
+                            current_prop = props[prop_counter]
+                            if ( current_var not in alias_map ):
+                                break
+                        # create appropriate parent node for alias
+                        if ( alias_info != "" ):
+                            alias_id = var_deps[alias_info[0]][alias_info[1]].get('real_id')
+                            alias_parent = alias_info[0] + ",id=" + str(alias_id) + "," + var_deps[alias_info[0]][alias_info[1]].get('script') + "," + var_deps[alias_info[0]][alias_info[1]].get('OrigLine')
+                            dot_output.write("\"" + alias_parent + "\" -> \"" + curr_child + "\"[style=dotted];\n")
                 else:
                     if ( len(write_list) == 1 ):
                         single_id = "null"
@@ -85,7 +108,6 @@ def make_dot():
                             object_node = write_list[x].get('Value')
                             label = "[label=\" set\"]"
                             dot_output.write("\"" + str(object_node) + "\" -> \"" + curr_node + "\"" + label + ";\n")
-
 
     # add edges for cross-var dependencies
     for c in cross_deps:
@@ -108,8 +130,10 @@ def make_dot():
                 if ( 'type' in var_deps[pind[0]][pind[1]] ):
                     curr_parent = "Local Variable: " + curr_parent
                 curr_label = ""
+                prop_change = ""
                 if ( 'property' in var_deps[pind[0]][pind[1]] ): # this write is for an id property, so add a label
                     curr_label = "[label=\" '" + var_deps[pind[0]][pind[1]]['property'] + "'\"]"
+                    prop_change = var_deps[pind[0]][pind[1]]['property']
                 new_curr_label = ""
                 if ( len(pind) > 2 ):
                     new_curr_label = "[label=\" '"
@@ -117,8 +141,33 @@ def make_dot():
                         new_curr_label = new_curr_label + pind[i]
                         if ( i != len(pind)-1 ):
                             new_curr_label = new_curr_label + "\n"
+                        if ( 'property: ' in pind[i] ):
+                            prop_change = pind[i][10:]
                     new_curr_label = new_curr_label + "'\"]"
                 dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + curr_label + new_curr_label +  ";\n")
+                # add dotted edge from original object variable if applicable
+                if ( curr_name in alias_map ):
+                    # iterate through alias map using all properties (split by '.') and add edge from the highest level alias
+                    props = prop_change.split(".")
+                    current_var = curr_name
+                    current_prop = props[0]
+                    prop_counter = 0
+                    alias_info = ""
+                    while ( current_prop in alias_map[current_var] ):
+                        alias_info = alias_map[current_var][current_prop]
+                        current_var = alias_info[0]
+                        prop_counter = prop_counter + 1
+                        if ( prop_counter >= len(props) ):
+                            break
+                        current_prop = props[prop_counter]
+                        if ( current_var not in alias_map ):
+                            break
+                    print "alias var will be: " + str(current_var)
+                    # create appropriate parent node for alias
+                    if ( alias_info != "" ):
+                        alias_id = var_deps[alias_info[0]][alias_info[1]].get('real_id')
+                        alias_parent = alias_info[0] + ",id=" + str(alias_id) + "," + var_deps[alias_info[0]][alias_info[1]].get('script') + "," + var_deps[alias_info[0]][alias_info[1]].get('OrigLine')
+                        dot_output.write("\"" + alias_parent + "\" -> \"" + curr_child + "\"[style=dotted];\n")
 
     # finally, close dot graph
     dot_output.write("}")
@@ -141,6 +190,8 @@ asts = {}
 obj_map = {}
 # dictionary mapping last instance of each id to a var name
 last_id_name = {}
+# dictionary mapping alias references for objects (keys are var names and values are dictionaries with keys as property names and values as other var names that they map to)
+alias_map = {}
 
 with open(log_file) as f:
     for line in f:
@@ -193,9 +244,11 @@ with open(log_file) as f:
                             for dep in out_json[key]:
                                 curr_dep = dep
                                 assign_prop = ""
+                                alias_prop = ""
                                 if ( isinstance(dep, list) ):
                                     curr_dep = dep[0]
                                     assign_prop = "set: " + dep[1]
+                                    alias_prop = dep[1]
                                 if ( curr_dep[0:7] == "window." ):
                                     curr_dep = curr_dep[7:]
                                 if ( curr_dep != curr_key ): # only care if variable is not the same!
@@ -213,6 +266,10 @@ with open(log_file) as f:
                                             dep_tuple = (curr_dep, len_dep, assign_prop)
                                         if ( dep_tuple not in cross_deps[curr_key][curr_key_line] ):
                                             cross_deps[curr_key][curr_key_line].append(dep_tuple)
+                                        # add alias info
+                                        if ( curr_key not in alias_map ):
+                                            alias_map[curr_key] = {}
+                                        alias_map[curr_key][alias_prop] = (curr_dep, len(var_deps[curr_dep])-1)
                                     else:
                                         # this is a local var or a property
                                         # if local var- create new variable with name maybelocal_randnum_varname (since local vars can have same name)
