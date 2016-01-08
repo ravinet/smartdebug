@@ -73,9 +73,11 @@ def make_dot():
                     dot_output.write("\"" + curr_parent + "\" -> \"" + curr_child + "\"" + curr_ending + curr_label + ";\n")
                     # add node for each new object literal created and add edge to curr_parent with label "set"
                     if ( write_list[x].get('NewValId') != "null" ):
-                        object_node = write_list[x].get('Value')
-                        label = "[label=\" set\"]"
-                        dot_output.write("\"" + str(object_node) + "\" -> \"" + curr_parent + "\"" + label + ";\n")
+                        if ( first_id_name[write_list[x].get('NewValId')] == k ):
+                            object_node = write_list[x].get('Value')
+                            label = "[label=\" set\"]"
+                            print "adding for: " + str(object_node)
+                            dot_output.write("\"" + str(object_node) + "\" -> \"" + curr_parent + "\"" + label + ";\n")
                     if ( k in alias_map ):
                         # iterate through alias map using all properties (split by '.') and add edge from the highest level alias
                         props = prop_change.split(".")
@@ -105,9 +107,10 @@ def make_dot():
                         curr_node = k + ",id=" + str(single_id) + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
                         dot_output.write("\"" + curr_node + "\"" + curr_ending + ";\n")
                         if ( write_list[x].get('NewValId') != "null" ):
-                            object_node = write_list[x].get('Value')
-                            label = "[label=\" set\"]"
-                            dot_output.write("\"" + str(object_node) + "\" -> \"" + curr_node + "\"" + label + ";\n")
+                            if ( first_id_name[write_list[x].get('NewValId')] == k ):
+                                object_node = write_list[x].get('Value')
+                                label = "[label=\" set\"]"
+                                dot_output.write("\"" + str(object_node) + "\" -> \"" + curr_node + "\"" + label + ";\n")
 
     # add edges for cross-var dependencies
     for c in cross_deps:
@@ -191,6 +194,8 @@ obj_map = {}
 last_id_name = {}
 # dictionary mapping alias references for objects (keys are var names and values are dictionaries with keys as property names and values as other var names that they map to)
 alias_map = {}
+# dictionary mapping object id's to the first heap variable name it is assigned to
+first_id_name = {}
 
 with open(log_file) as f:
     for line in f:
@@ -200,6 +205,8 @@ with open(log_file) as f:
         if ( curr_var not in var_deps ):
             var_deps[curr_var] = []
         if ( curr_line.get('OpType') == 'WRITE' ):
+            if ( (curr_line.get('NewValId') != "null") and (curr_line.get('NewValId') not in first_id_name ) ):
+                first_id_name[curr_line.get('NewValId')] = curr_line.get('PropName')
             parent_obj_id = curr_line.get('ParentId')
             if ( parent_obj_id in obj_map ):
                 # consider this a write on the last instance of this object we considered (which is this line)
