@@ -76,7 +76,6 @@ def make_dot():
                         if ( first_id_name[write_list[x].get('NewValId')] == k ):
                             object_node = write_list[x].get('Value')
                             label = "[label=\" set\"]"
-                            print "adding for: " + str(object_node)
                             dot_output.write("\"" + str(object_node) + "\" -> \"" + curr_parent + "\"" + label + ";\n")
                     if ( isinstance(write_list[x].get('Value'), dict) ):
                         if ( k in alias_map ):
@@ -101,17 +100,18 @@ def make_dot():
                                 alias_parent = alias_info[0] + ",id=" + str(alias_id) + "," + var_deps[alias_info[0]][alias_info[1]].get('script') + "," + var_deps[alias_info[0]][alias_info[1]].get('OrigLine')
                                 dot_output.write("\"" + alias_parent + "\" -> \"" + curr_child + "\"[style=dotted];\n")
                 else:
+                    single_id = "null"
+                    if ( 'real_id' in write_list[x] ):
+                        single_id = write_list[x]['real_id']
+                    curr_node = k + ",id=" + str(single_id) + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
                     if ( len(write_list) == 1 ):
-                        single_id = "null"
-                        if ( 'real_id' in write_list[x] ):
-                            single_id = write_list[x]['real_id']
-                        curr_node = k + ",id=" + str(single_id) + "," + write_list[x].get('script') + "," + write_list[x].get('OrigLine')
                         dot_output.write("\"" + curr_node + "\"" + curr_ending + ";\n")
-                        if ( write_list[x].get('NewValId') != "null" ):
-                            if ( first_id_name[write_list[x].get('NewValId')] == k ):
-                                object_node = write_list[x].get('Value')
-                                label = "[label=\" set\"]"
-                                dot_output.write("\"" + str(object_node) + "\" -> \"" + curr_node + "\"" + label + ";\n")
+                    # add node for each new object literal created and add edge to curr_parent with label "set"
+                    if ( write_list[x].get('NewValId') != "null" ):
+                        if ( first_id_name[write_list[x].get('NewValId')] == k ):
+                            object_node = write_list[x].get('Value')
+                            label = "[label=\" set\"]"
+                            dot_output.write("\"" + str(object_node) + "\" -> \"" + curr_node + "\"" + label + ";\n")
 
     # add edges for cross-var dependencies
     for c in cross_deps:
