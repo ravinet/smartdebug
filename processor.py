@@ -43,6 +43,7 @@ def get_source_line(filename, line_no):
     else:
         raise ValueError("Object (" + filename + ") doesn't seem to exist in recorded folder (" + recorded_folder + ")")
 
+# class for each node in the flow diagram
 class Node(object):
     def __init__(self, variable, line_number, source_line, step):
         self.variable = variable
@@ -50,6 +51,20 @@ class Node(object):
         self.source_line = source_line
         self.step = step
 
+# iterate through log and process each write
+with open(log_file) as f:
+    for line in f:
+        curr_line = json.loads(line.strip("\n"))
+        if ( curr_line.get('OpType') == 'WRITE' ):
+            curr_var = curr_line.get('PropName')
+            curr_script = curr_line.get('script')
+            # if the script exists, get the static dependencies
+            if ( get_source_file(curr_script) ):
+                cmd = "nodejs line_type.js file temp_file " + curr_line.get('OrigLine')
+                proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
+                (out, err) = proc.communicate()
+                esprima_deps = json.loads(out.strip("\n").replace("\'", '"'))
+            os.system("rm temp_file")
 '''
 go through the log and for each write, we want to:
 1) get the source code line (currently from the rewritten version)...we may only care about the right side
