@@ -43,6 +43,13 @@ def get_source_line(filename, line_no):
     else:
         raise ValueError("Object (" + filename + ") doesn't seem to exist in recorded folder (" + recorded_folder + ")")
 
+class Node(object):
+    def __init__(self, variable, line_number, source_line, step):
+        self.variable = variable
+        self.line_number = line_number
+        self.source_line = source_line
+        self.step = step
+
 '''
 go through the log and for each write, we want to:
 1) get the source code line (currently from the rewritten version)...we may only care about the right side
