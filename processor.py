@@ -39,7 +39,6 @@ def get_source_line(filename, line_no):
                     return line.strip("\n").strip()
                 counter = counter + 1
         os.system("rm temp_file")
-        raise ValueError("File (" + recorded_file + "," + filename + ") is shorter than log's line number (" + line_no + ")")
     else:
         raise ValueError("Object (" + filename + ") doesn't seem to exist in recorded folder (" + recorded_folder + ")")
 
@@ -51,20 +50,99 @@ class Node(object):
         self.source_line = source_line
         self.step = step
 
-# iterate through log and process each write
+# function to create flow diagram (in dot format)
+def plot_flow_diagram():
+    # store dot lines in a file
+    dot_output = open("flow_diagram.dot", 'w')
+    dot_output.write("strict digraph G {\nratio=compress;\nconcentrate=true;\n")
+
+    # iterate through dependencies and print dependency line for each tuple
+    for dep_pair in dependencies:
+        parent = str(dep_pair[0].variable) + "," + str(dep_pair[0].line_number) + "\n" + str(dep_pair[0].source_line)
+        child = str(dep_pair[1].variable) + "," + str(dep_pair[1].line_number) + "\n" + str(dep_pair[1].source_line)
+        dot_output.write("\"" + parent + "\" -> \"" + child + "\";\n")
+
+    # close dot file
+    dot_output.write("}")
+    dot_output.close()
+
+    # make graph
+    os.system("dot -Tpdf flow_diagram.dot -o flow_diagram.pdf")
+
+# maintain a list of 'nodes' per variable (keys are variables and values are lists of nodes (in step order))
+var_nodes = {}
+
+# maintain a list of dependencies (each entry is a tuple...order doesn't really matter)
+dependencies = []
+
+# maintain a list of alias mappings (keys are object ids, and values are lists of variable names that are currently aliases for same underlying object)
+#TODO: need to remove alias mapping if no longer an alias!
+aliases = {}
+
+# iterate through log and process each write. maintain a step counter (each write is a step)
+step = 0
 with open(log_file) as f:
     for line in f:
         curr_line = json.loads(line.strip("\n"))
         if ( curr_line.get('OpType') == 'WRITE' ):
             curr_var = curr_line.get('PropName')
             curr_script = curr_line.get('script')
+            curr_line_num = curr_line.get('OrigLine')
+            curr_newvalid = curr_line.get('NewValId')
+            curr_source_line = get_source_line(curr_script, curr_line_num)
             # if the script exists, get the static dependencies
             if ( get_source_file(curr_script) ):
-                cmd = "nodejs line_type.js file temp_file " + curr_line.get('OrigLine')
+                cmd = "nodejs line_type.js file temp_file " + curr_line_num
                 proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
                 (out, err) = proc.communicate()
                 esprima_deps = json.loads(out.strip("\n").replace("\'", '"'))
-            os.system("rm temp_file")
+                print esprima_deps
+                # handle each left-side variable in dependency list for the line
+                for left_var in esprima_deps:
+                    # create node for current write and add node to appropriate variable list
+                    curr_node = Node( left_var, curr_line_num, curr_source_line, step)
+                    # get list of alias nodes (based on NewValId), and add current var to alias list
+                    curr_alias_list = []
+                    if ( curr_newvalid != "null" ):
+                        if ( curr_newvalid in aliases ):
+                            curr_alias_list = aliases[curr_newvalid]
+                            aliases[curr_newvalid].append(left_var)
+                        else:
+                            aliases[curr_newvalid] = [left_var]
+                    if ( left_var in var_nodes ):
+                        var_nodes[left_var].append(curr_node)
+                    else:
+                        var_nodes[left_var] = [curr_node]
+                    curr_esprima_deps = esprima_deps[left_var]
+                    if ( len(esprima_deps[left_var]) > 0 ):
+                        if ( isinstance(esprima_deps[left_var][0], list) ):
+                            curr_esprima_deps = esprima_deps[left_var][0]
+                    for curr_dep in curr_esprima_deps:
+                        # add dependencies from last 'write' to each variable to current node
+                        if ( curr_dep in var_nodes ):
+                            parent_node = var_nodes[curr_dep][-1]
+                            dependencies.append((parent_node, curr_node))
+                            # add dependencies for aliases as well
+                            for alias in curr_alias_list:
+                                alias_child_node = var_nodes[alias][-1]
+                                dependencies.append((parent_node, alias_child_node))
+                            #TODO: do we want to also add edges when aliases are created?
+                os.system("rm temp_file")
+        step += 1
+
+plot_flow_diagram()
+
+
+#we want to treat variables individually (x and x.blah)
+#
+#what if we just store a list of dependencies which are tuples of node objects (parent, child)?
+#store alias dictionary- mapping node to node (anytime we add a dep, check if we need to add for alias as well for both parent or child)
+#
+#can we just detect aliases using the object ids?..basically anytime we find a new id, add a mapping of id to node and then all nodes for that id are aliases
+#still want to maintain a list of nodes per variable so we know what the last one is! but, we dont need to add dependencies in that list..only if there is a dep!
+#
+
+
 '''
 go through the log and for each write, we want to:
 1) get the source code line (currently from the rewritten version)...we may only care about the right side
