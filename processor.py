@@ -1,4 +1,4 @@
-import os, sys, subprocess, json, random
+import os, sys, subprocess, json, ast, re
 
 log_file = sys.argv[1]
 recorded_folder = sys.argv[2]
@@ -34,7 +34,7 @@ def get_source_line(filename, line_no):
         counter = 1
         with open("temp_file") as c:
             for line in c:
-                if ( counter == line_no ):
+                if ( counter == int(line_no) ):
                     os.system("rm temp_file")
                     return line.strip("\n").strip()
                 counter = counter + 1
@@ -79,6 +79,53 @@ dependencies = []
 #TODO: need to remove alias mapping if no longer an alias!
 aliases = {}
 
+# takes in a source line that should be an object declaration, and outputs the new dictionary with keys as full variable names (top level var + key) and vals
+def process_object( source_line ):
+    print source_line
+    parts = source_line.split(" = ")
+    top_level = parts[0]
+    obj = parts[1]
+    if ( 'makeProxy(' == obj[0:10] ):
+        obj = obj[10:]
+    if ( obj[-1] == ";" ):
+        obj = obj[:-1]
+    if ( obj[-1] == ")" ):
+        obj = obj[:-1]
+    if ( '{' in obj ): # cheap way of seeing if it is an object declaration or simply an object due to aliasing
+        colons = [m.start() for m in re.finditer(':', obj)]
+        new_obj = ""
+        prev_c = 0
+        for c in colons:
+            new_obj = new_obj + obj[prev_c:c+2] + "'"
+            prev_c = c+2
+        new_obj = new_obj + obj[colons[-1]+2:]
+        commas = [m.start() for m in re.finditer(',', new_obj)]
+        prev_c = 0
+        comm_obj = ""
+        for c in commas:
+            comm_obj = comm_obj + "\"" + new_obj[prev_c:c] + "'" + new_obj[c]
+            prev_c = c+2
+        if ( len(commas) !=  0 ):
+            comm_obj = comm_obj + new_obj[commas[-1]+1:]
+        else:
+            comm_obj = new_obj
+        closes = [m.start() for m in re.finditer('}', comm_obj)]
+        prev_c = 0
+        final_obj = "\""
+        for c in closes:
+            final_obj = final_obj + comm_obj[prev_c:c] + "'" + comm_obj[c]
+            prev_c = c+2
+        final_obj = final_obj + "\"" + comm_obj[closes[-1]+1:]
+        ret_obj = ast.literal_eval(json.loads(final_obj))
+        # iterate through object and create dictionary with keys as full var names and vals
+        ret = {}
+        for k in ret_obj:
+            ret[top_level + "." + k] = ret_obj[k]
+        return ret
+    else:
+        # not an object assignment so rerturn empty dict
+        return {}
+
 # iterate through log and process each write. maintain a step counter (each write is a step)
 step = 0
 with open(log_file) as f:
@@ -96,11 +143,20 @@ with open(log_file) as f:
                 proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
                 (out, err) = proc.communicate()
                 esprima_deps = json.loads(out.strip("\n").replace("\'", '"'))
-                print esprima_deps
                 # handle each left-side variable in dependency list for the line
                 for left_var in esprima_deps:
                     # create node for current write and add node to appropriate variable list
                     curr_node = Node( left_var, curr_line_num, curr_source_line, step)
+                    # if it is an object assignment (right side of source line is an object and there is an object id), add node for each property
+                    if ( curr_newvalid != "null" ):
+                        obj_parts = process_object(curr_source_line)
+                        for key in obj_parts:
+                            # create node for each key
+                            part_node = Node( key, curr_line_num, obj_parts[key], step)
+                            if ( key in var_nodes ):
+                                var_nodes[key].append(part_node)
+                            else:
+                                var_nodes[key] = [part_node]
                     # get list of alias nodes (based on NewValId), and add current var to alias list
                     curr_alias_list = []
                     if ( curr_newvalid != "null" ):
@@ -131,6 +187,10 @@ with open(log_file) as f:
         step += 1
 
 plot_flow_diagram()
+
+#TODO:
+#each time an object is created, we want to iterate throrugh it and crerate a node for each key that was written (e.g., x.test)..the source code should be the value forr that key.
+#we want to have dotted lines when aliases are created and then each time something is updated, we want to add edges to/frrom all aliases.
 
 
 #we want to treat variables individually (x and x.blah)
