@@ -611,7 +611,7 @@ function handle_objects(node,vars) {
             var binary_nest = binary_expressions( node.properties[x].value, []);
             for (var z = 0; z < binary_nest.length; z++ ) {
                 if ( vars.indexOf(binary_nest[z]) == -1 ) {
-                    vars.push(binary_nest[z]);
+                    vars.push([binary_nest[z], prop_name]);
                 }
             }
         }
