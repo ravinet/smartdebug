@@ -146,6 +146,19 @@ with open(log_file) as f:
                 for left_var in esprima_deps:
                     # create node for current write and add node to appropriate variable list
                     curr_node = Node( left_var, curr_line_num, curr_source_line, step)
+                    curr_esprima_deps = esprima_deps[left_var]
+                    key_deps = {}
+                    if ( len(esprima_deps[left_var]) > 0 ):
+                        if ( isinstance(esprima_deps[left_var][0], list) ):
+                            curr_esprima_deps = esprima_deps[left_var][0]
+                            for arr in esprima_deps[left_var]:
+                                new_key = arr[1]
+                                new_dep = arr[0]
+                                new_key = left_var + "." + new_key
+                                if ( new_key not in key_deps ):
+                                    key_deps[new_key] = [new_dep]
+                                else:
+                                    key_deps[new_key].append(new_dep)
                     # if it is an object assignment (object id present), add node for each property
                     if ( curr_newvalid != "null" ):
                         obj_parts = process_object(curr_source_line)
@@ -158,6 +171,11 @@ with open(log_file) as f:
                                 var_nodes[key] = [part_node]
                             # add edge from original write to each sub-write
                             dependencies.append((curr_node, part_node))
+                            # add appropriate edges from other existing vars
+                            if ( part_node.variable in key_deps ):
+                                for d in key_deps[part_node.variable]:
+                                    if ( d in var_nodes ):
+                                        dependencies.append((var_nodes[d][-1], part_node))
                     # get list of alias nodes (based on NewValId), and add current var to alias list
                     curr_alias_list = []
                     if ( curr_newvalid != "null" ):
@@ -170,10 +188,6 @@ with open(log_file) as f:
                         var_nodes[left_var].append(curr_node)
                     else:
                         var_nodes[left_var] = [curr_node]
-                    curr_esprima_deps = esprima_deps[left_var]
-                    if ( len(esprima_deps[left_var]) > 0 ):
-                        if ( isinstance(esprima_deps[left_var][0], list) ):
-                            curr_esprima_deps = esprima_deps[left_var][0]
                     for curr_dep in curr_esprima_deps:
                         # add dependencies from last 'write' to each variable to current node
                         if ( curr_dep in var_nodes ):
