@@ -58,9 +58,14 @@ def plot_flow_diagram():
 
     # iterate through dependencies and print dependency line for each tuple
     for dep_pair in dependencies:
-        parent = str(dep_pair[0].variable) + "," + str(dep_pair[0].line_number) + "\n" + str(dep_pair[0].source_line)
+        parent = ""
+        if ( not isinstance(dep_pair[0], str) ):
+            parent = str(dep_pair[0].variable) + "," + str(dep_pair[0].line_number) + "\n" + str(dep_pair[0].source_line)
         child = str(dep_pair[1].variable) + "," + str(dep_pair[1].line_number) + "\n" + str(dep_pair[1].source_line)
-        dot_output.write("\"" + parent + "\" -> \"" + child + "\";\n")
+        if ( parent != "" ):
+            dot_output.write("\"" + parent + "\" -> \"" + child + "\";\n")
+        else:
+            dot_output.write("\"" + child + "\";\n")
 
     # close dot file
     dot_output.write("}")
@@ -159,8 +164,8 @@ with open(log_file) as f:
                                     key_deps[new_key] = [new_dep]
                                 else:
                                     key_deps[new_key].append(new_dep)
-                    # if it is an object assignment (object id present), add node for each property
-                    if ( curr_newvalid != "null" ):
+                    # if it is an object assignment (object id present), add node for each property (only if it is literal declaration)
+                    if ( (curr_newvalid != "null") and (curr_newvalid not in aliases) ):
                         obj_parts = process_object(curr_source_line)
                         for key in obj_parts:
                             # create node for each key
@@ -181,13 +186,19 @@ with open(log_file) as f:
                     if ( curr_newvalid != "null" ):
                         if ( curr_newvalid in aliases ):
                             curr_alias_list = aliases[curr_newvalid]
+                            # add dep from each alias node to curr node (alias creation edges)
+                            for u in curr_alias_list:
+                                alias_parent = var_nodes[u][-1]
+                                dependencies.append((alias_parent, curr_node))
                             aliases[curr_newvalid].append(left_var)
                         else:
                             aliases[curr_newvalid] = [left_var]
                     if ( left_var in var_nodes ):
                         var_nodes[left_var].append(curr_node)
+                        dependencies.append(("", curr_node))
                     else:
                         var_nodes[left_var] = [curr_node]
+                        dependencies.append(("", curr_node))
                     for curr_dep in curr_esprima_deps:
                         # add dependencies from last 'write' to each variable to current node
                         if ( curr_dep in var_nodes ):
@@ -197,7 +208,6 @@ with open(log_file) as f:
                             for alias in curr_alias_list:
                                 alias_child_node = var_nodes[alias][-1]
                                 dependencies.append((parent_node, alias_child_node))
-                            #TODO: do we want to also add edges when aliases are created?
                 os.system("rm temp_file")
         step += 1
 
