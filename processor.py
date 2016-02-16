@@ -81,7 +81,6 @@ aliases = {}
 
 # takes in a source line that should be an object declaration, and outputs the new dictionary with keys as full variable names (top level var + key) and vals
 def process_object( source_line ):
-    print source_line
     parts = source_line.split(" = ")
     top_level = parts[0]
     obj = parts[1]
@@ -147,7 +146,7 @@ with open(log_file) as f:
                 for left_var in esprima_deps:
                     # create node for current write and add node to appropriate variable list
                     curr_node = Node( left_var, curr_line_num, curr_source_line, step)
-                    # if it is an object assignment (right side of source line is an object and there is an object id), add node for each property
+                    # if it is an object assignment (object id present), add node for each property
                     if ( curr_newvalid != "null" ):
                         obj_parts = process_object(curr_source_line)
                         for key in obj_parts:
@@ -157,6 +156,8 @@ with open(log_file) as f:
                                 var_nodes[key].append(part_node)
                             else:
                                 var_nodes[key] = [part_node]
+                            # add edge from original write to each sub-write
+                            dependencies.append((curr_node, part_node))
                     # get list of alias nodes (based on NewValId), and add current var to alias list
                     curr_alias_list = []
                     if ( curr_newvalid != "null" ):
