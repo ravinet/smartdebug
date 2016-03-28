@@ -44,11 +44,12 @@ def get_source_line(filename, line_no):
 
 # class for each node in the flow diagram
 class Node(object):
-    def __init__(self, variable, line_number, source_line, step):
+    def __init__(self, variable, line_number, source_line, step, obj_id):
         self.variable = variable
         self.line_number = line_number
         self.source_line = source_line
         self.step = step
+        self.objid = obj_id
 
 # function to create flow diagram (in dot format)
 def plot_flow_diagram():
@@ -58,12 +59,15 @@ def plot_flow_diagram():
 
     # iterate through dependencies and print dependency line for each tuple
     for dep_pair in dependencies:
+        label = ""
+        if ( len(dep_pair) == 3 ):
+            label = dep_pair[2]
         parent = ""
         if ( not isinstance(dep_pair[0], str) ):
-            parent = str(dep_pair[0].variable) + "," + str(dep_pair[0].line_number) + "\n" + str(dep_pair[0].source_line)
-        child = str(dep_pair[1].variable) + "," + str(dep_pair[1].line_number) + "\n" + str(dep_pair[1].source_line)
+            parent = str(dep_pair[0].variable) + "," + str(dep_pair[0].line_number) + "\n" + str(dep_pair[0].source_line) + "\nID: " + str(dep_pair[0].objid)
+        child = str(dep_pair[1].variable) + "," + str(dep_pair[1].line_number) + "\n" + str(dep_pair[1].source_line) + "\nID: " + str(dep_pair[1].objid)
         if ( parent != "" ):
-            dot_output.write("\"" + parent + "\" -> \"" + child + "\";\n")
+            dot_output.write("\"" + parent + "\" -> \"" + child + "\"[label=\"" + label + "\"];\n")
         else:
             dot_output.write("\"" + child + "\";\n")
 
@@ -100,14 +104,20 @@ def process_object( source_line ):
         new_obj = ""
         prev_c = 0
         for c in colons:
-            new_obj = new_obj + obj[prev_c:c+2] + "'"
+            if ( obj[c+2] != "'" ):
+                new_obj = new_obj + obj[prev_c:c+2] + "'"
+            else:
+                new_obj = new_obj + obj[prev_c:c+2]
             prev_c = c+2
         new_obj = new_obj + obj[colons[-1]+2:]
         commas = [m.start() for m in re.finditer(',', new_obj)]
         prev_c = 0
         comm_obj = ""
         for c in commas:
-            comm_obj = comm_obj + "\"" + new_obj[prev_c:c] + "'" + new_obj[c]
+            if ( new_obj[c-1] == "'" ):
+                comm_obj = comm_obj + new_obj[prev_c:c+1]
+            else:
+                comm_obj = comm_obj + "\"" + new_obj[prev_c:c] + "'" + new_obj[c]
             prev_c = c+2
         if ( len(commas) !=  0 ):
             comm_obj = comm_obj + new_obj[commas[-1]+1:]
@@ -116,8 +126,13 @@ def process_object( source_line ):
         closes = [m.start() for m in re.finditer('}', comm_obj)]
         prev_c = 0
         final_obj = "\""
+        if ( comm_obj[0] == "\"" ):
+            final_obj = ""
         for c in closes:
-            final_obj = final_obj + comm_obj[prev_c:c] + "'" + comm_obj[c]
+            if ( comm_obj[c-2] == "'" ):
+                final_obj = final_obj + comm_obj[prev_c:c+1]
+            else:
+                final_obj = final_obj + comm_obj[prev_c:c-1] + "'" + comm_obj[c]
             prev_c = c+2
         final_obj = final_obj + "\"" + comm_obj[closes[-1]+1:]
         ret_obj = ast.literal_eval(json.loads(final_obj))
@@ -150,16 +165,17 @@ with open(log_file) as f:
                 # handle each left-side variable in dependency list for the line
                 for left_var in esprima_deps:
                     # create node for current write and add node to appropriate variable list
-                    curr_node = Node( left_var, curr_line_num, curr_source_line, step)
+                    curr_node = Node( left_var, curr_line_num, curr_source_line, step, curr_newvalid)
                     curr_esprima_deps = esprima_deps[left_var]
                     key_deps = {}
                     if ( len(esprima_deps[left_var]) > 0 ):
                         if ( isinstance(esprima_deps[left_var][0], list) ):
-                            curr_esprima_deps = esprima_deps[left_var][0]
+                            curr_esprima_deps = []
                             for arr in esprima_deps[left_var]:
                                 new_key = arr[1]
                                 new_dep = arr[0]
                                 new_key = left_var + "." + new_key
+                                curr_esprima_deps.append(new_dep)
                                 if ( new_key not in key_deps ):
                                     key_deps[new_key] = [new_dep]
                                 else:
@@ -169,7 +185,7 @@ with open(log_file) as f:
                         obj_parts = process_object(curr_source_line)
                         for key in obj_parts:
                             # create node for each key
-                            part_node = Node( key, curr_line_num, obj_parts[key], step)
+                            part_node = Node( key, curr_line_num, obj_parts[key], step, curr_newvalid)
                             if ( key in var_nodes ):
                                 var_nodes[key].append(part_node)
                             else:
@@ -189,7 +205,7 @@ with open(log_file) as f:
                             # add dep from each alias node to curr node (alias creation edges)
                             for u in curr_alias_list:
                                 alias_parent = var_nodes[u][-1]
-                                dependencies.append((alias_parent, curr_node))
+                                dependencies.append((alias_parent, curr_node, "alias created"))
                             aliases[curr_newvalid].append(left_var)
                         else:
                             aliases[curr_newvalid] = [left_var]
@@ -207,7 +223,7 @@ with open(log_file) as f:
                             # add dependencies for aliases as well
                             for alias in curr_alias_list:
                                 alias_child_node = var_nodes[alias][-1]
-                                dependencies.append((parent_node, alias_child_node))
+                                dependencies.append((parent_node, alias_child_node, "alias update"))
                 os.system("rm temp_file")
         step += 1
 
