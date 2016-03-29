@@ -55,7 +55,7 @@ class Node(object):
 def plot_flow_diagram():
     # store dot lines in a file
     dot_output = open("flow_diagram.dot", 'w')
-    dot_output.write("strict digraph G {\nratio=compress;\nconcentrate=true;\n")
+    dot_output.write("strict digraph G {\nratio=compress;\nconcentrate=true;\nrankdir=LR;\n")
 
     # iterate through dependencies and print dependency line for each tuple
     for dep_pair in dependencies:
@@ -87,6 +87,17 @@ dependencies = []
 # maintain a list of alias mappings (keys are object ids, and values are lists of variable names that are currently aliases for same underlying object)
 #TODO: need to remove alias mapping if no longer an alias!
 aliases = {}
+
+# list of variable names (lhs and rhs) that will eventually be columns in the graph (need node for each of these)
+variables = []
+
+# strips 'makeProxy' wrapping from objects
+def strip_object( source_line ):
+    parts = source_line.split(" = ")
+    obj = parts[1]
+    if ( 'makeProxy(' == obj[0:10] ):
+        obj = obj[10:]
+    return obj
 
 # takes in a source line that should be an object declaration, and outputs the new dictionary with keys as full variable names (top level var + key) and vals
 def process_object( source_line ):
@@ -164,6 +175,9 @@ with open(log_file) as f:
                 esprima_deps = json.loads(out.strip("\n").replace("\'", '"'))
                 # handle each left-side variable in dependency list for the line
                 for left_var in esprima_deps:
+                    # add parent variable to list of vars if not already there
+                    if ( left_var not in variables ):
+                        variables.append(left_var)
                     # create node for current write and add node to appropriate variable list
                     curr_node = Node( left_var, curr_line_num, curr_source_line, step, curr_newvalid)
                     curr_esprima_deps = esprima_deps[left_var]
@@ -180,23 +194,27 @@ with open(log_file) as f:
                                     key_deps[new_key] = [new_dep]
                                 else:
                                     key_deps[new_key].append(new_dep)
+                        else:
+                            for dep_var in esprima_deps[left_var]:
+                                if ( dep_var not in variables ):
+                                    variables.append(dep_var)
                     # if it is an object assignment (object id present), add node for each property (only if it is literal declaration)
-                    if ( (curr_newvalid != "null") and (curr_newvalid not in aliases) ):
-                        obj_parts = process_object(curr_source_line)
-                        for key in obj_parts:
-                            # create node for each key
-                            part_node = Node( key, curr_line_num, obj_parts[key], step, curr_newvalid)
-                            if ( key in var_nodes ):
-                                var_nodes[key].append(part_node)
-                            else:
-                                var_nodes[key] = [part_node]
-                            # add edge from original write to each sub-write
-                            dependencies.append((curr_node, part_node))
-                            # add appropriate edges from other existing vars
-                            if ( part_node.variable in key_deps ):
-                                for d in key_deps[part_node.variable]:
-                                    if ( d in var_nodes ):
-                                        dependencies.append((var_nodes[d][-1], part_node))
+                    #if ( (curr_newvalid != "null") and (curr_newvalid not in aliases) ):
+                    #    obj_parts = process_object(curr_source_line)
+                    #    for key in obj_parts:
+                    #        # create node for each key
+                    #        part_node = Node( key, curr_line_num, obj_parts[key], step, curr_newvalid)
+                    #        if ( key in var_nodes ):
+                    #            var_nodes[key].append(part_node)
+                    #        else:
+                    #            var_nodes[key] = [part_node]
+                    #        # add edge from original write to each sub-write
+                    #        dependencies.append((curr_node, part_node))
+                    #        # add appropriate edges from other existing vars
+                    #        if ( part_node.variable in key_deps ):
+                    #            for d in key_deps[part_node.variable]:
+                    #                if ( d in var_nodes ):
+                    #                    dependencies.append((var_nodes[d][-1], part_node))
                     # get list of alias nodes (based on NewValId), and add current var to alias list
                     curr_alias_list = []
                     if ( curr_newvalid != "null" ):
