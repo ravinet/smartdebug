@@ -89,8 +89,9 @@ def plot_flow_diagram():
     # iterate through dependencies and print dependency line for each tuple
     for dep_pair in dependencies:
         #label = ""
-        #if ( len(dep_pair) == 3 ):
-        #    label = dep_pair[2]
+        alias = False
+        if ( len(dep_pair) > 2 ):
+            alias = True
         parent = ""
         if ( not isinstance(dep_pair[0], str) ):
             label_id = ""
@@ -117,9 +118,15 @@ def plot_flow_diagram():
             dot_output.write("\"" + child_id_node + "\" -> \"" +  child + "\";\n")
         if ( parent != "" ):
             if ( label_id != "" ):
-                dot_output.write("\"" + parent + "\" -> \"" + child_id_node + "\";\n")
+                if ( alias ):
+                    dot_output.write("\"" + id_node + "\" -> \"" + child_id_node + "\";\n")
+                else:
+                    dot_output.write("\"" + parent + "\" -> \"" + child_id_node + "\";\n")
             else:
-                dot_output.write("\"" + parent + "\" -> \"" + child + "\";\n")
+                if ( alias ):
+                    dot_output.write("\"" + id_node + "\" -> \"" + child + "\";\n")
+                else:
+                    dot_output.write("\"" + parent + "\" -> \"" + child + "\";\n")
         #else:
         #    dot_output.write("\"" + child + "\";\n")
 
