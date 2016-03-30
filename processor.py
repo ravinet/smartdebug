@@ -51,6 +51,20 @@ class Node(object):
         self.step = step
         self.objid = obj_id
 
+# strips 'makeProxy' wrapping from objects
+def strip_object( source_line ):
+    parts = source_line.split(" = ")
+    obj = parts[1]
+    if ( 'makeProxy(' == obj[0:10] ):
+        obj = obj[10:]
+    if ( obj[-1] == ";" ):
+        obj = obj[:-1]
+    if ( obj[-1] == ")" ):
+        obj = obj[:-1]
+        return obj
+    else:
+        return ""
+
 # function to create flow diagram (in dot format)
 def plot_flow_diagram():
     # store dot lines in a file
@@ -64,12 +78,18 @@ def plot_flow_diagram():
             label = dep_pair[2]
         parent = ""
         if ( not isinstance(dep_pair[0], str) ):
-            parent = str(dep_pair[0].variable) + "," + str(dep_pair[0].line_number) + "\n" + str(dep_pair[0].source_line) + "\nID: " + str(dep_pair[0].objid)
-        child = str(dep_pair[1].variable) + "," + str(dep_pair[1].line_number) + "\n" + str(dep_pair[1].source_line) + "\nID: " + str(dep_pair[1].objid)
+            parent = str(dep_pair[0].variable) + "," + str(dep_pair[0].line_number) + "\n" + str(strip_object(dep_pair[0].source_line)) + "\nID: " + str(dep_pair[0].objid)
+        child = str(dep_pair[1].variable) + "," + str(dep_pair[1].line_number) + "\n" + str(strip_object(dep_pair[1].source_line)) + "\nID: " + str(dep_pair[1].objid)
         if ( parent != "" ):
             dot_output.write("\"" + parent + "\" -> \"" + child + "\"[label=\"" + label + "\"];\n")
         else:
             dot_output.write("\"" + child + "\";\n")
+
+    # add nodes for each id and variable (these will eventually become labels)
+    for var in variables:
+        dot_output.write("\"" + var + "\";\n")
+    for obj_id in aliases:
+        dot_output.write("\"" + str(obj_id) + "\";\n")
 
     # close dot file
     dot_output.write("}")
@@ -90,14 +110,6 @@ aliases = {}
 
 # list of variable names (lhs and rhs) that will eventually be columns in the graph (need node for each of these)
 variables = []
-
-# strips 'makeProxy' wrapping from objects
-def strip_object( source_line ):
-    parts = source_line.split(" = ")
-    obj = parts[1]
-    if ( 'makeProxy(' == obj[0:10] ):
-        obj = obj[10:]
-    return obj
 
 # takes in a source line that should be an object declaration, and outputs the new dictionary with keys as full variable names (top level var + key) and vals
 def process_object( source_line ):
