@@ -69,34 +69,67 @@ def strip_object( source_line ):
 def plot_flow_diagram():
     # store dot lines in a file
     dot_output = open("flow_diagram.dot", 'w')
-    dot_output.write("strict digraph G {\nratio=compress;\nconcentrate=true;\nrankdir=LR;\n")
-
-    # iterate through dependencies and print dependency line for each tuple
-    for dep_pair in dependencies:
-        label = ""
-        if ( len(dep_pair) == 3 ):
-            label = dep_pair[2]
-        parent = ""
-        if ( not isinstance(dep_pair[0], str) ):
-            parent = str(dep_pair[0].variable) + "," + str(dep_pair[0].line_number) + "\n" + str(strip_object(dep_pair[0].source_line)) + "\nID: " + str(dep_pair[0].objid)
-        child = str(dep_pair[1].variable) + "," + str(dep_pair[1].line_number) + "\n" + str(strip_object(dep_pair[1].source_line)) + "\nID: " + str(dep_pair[1].objid)
-        if ( parent != "" ):
-            dot_output.write("\"" + parent + "\" -> \"" + child + "\"[label=\"" + label + "\"];\n")
-        else:
-            dot_output.write("\"" + child + "\";\n")
+    #dot_output.write("strict digraph G {\nratio=compress;\nconcentrate=true;\nrankdir=LR;\n")
+    dot_output.write("digraph pipeline_diagram {\ngraph[splines=true];\n")
 
     # add nodes for each id and variable (these will eventually become labels)
+    id_pos = {}
+    var_pos = {}
+    id_x = 0
+    var_x = 1000
     for var in variables:
-        dot_output.write("\"" + var + "\";\n")
+        dot_output.write("\"" + var + "\"[pos=\"" + str(var_x) + ",0\"];\n")
+        if ( var not in var_pos ):
+            var_pos[var] = var_x
+        var_x = var_x + 300
     for obj_id in aliases:
-        dot_output.write("\"" + str(obj_id) + "\";\n")
+        dot_output.write("\"" + str(obj_id) + "\"[pos=\"" + str(id_x) + ",0\"];\n")
+        id_pos[obj_id] = id_x
+        id_x = id_x + 300
+    # iterate through dependencies and print dependency line for each tuple
+    for dep_pair in dependencies:
+        #label = ""
+        #if ( len(dep_pair) == 3 ):
+        #    label = dep_pair[2]
+        parent = ""
+        if ( not isinstance(dep_pair[0], str) ):
+            label_id = ""
+            if (  dep_pair[0].objid != "null" ):
+                label_id = "[pos=\"" + str(id_pos[dep_pair[0].objid]) + "," + str(dep_pair[0].step*-100) +"\"]"
+            label_var = "[pos=\"" + str(var_pos[dep_pair[0].variable]) + "," + str(dep_pair[0].step*-100) +"\"]"
+            parent = str(dep_pair[0].variable) + "," + str(dep_pair[0].line_number) + "\n" + str(strip_object(dep_pair[0].source_line))
+            id_node = str(strip_object(dep_pair[0].source_line))
+            if ( id_node != "" ):
+                dot_output.write("\"" + id_node + "\"" + label_id + ";\n")
+                dot_output.write("\"" + id_node + "\" -> \"" + parent + "\";\n")
+            dot_output.write("\"" + parent + "\"" + label_var +";\n")
+        label_id = ""
+        child_id_node = ""
+        if (  dep_pair[1].objid != "null" ):
+            if ( str(strip_object(dep_pair[1].source_line)) != "" ):
+                label_id =  "[pos=\"" + str(id_pos[dep_pair[1].objid]) + "," + str(dep_pair[1].step*-100) +"\"]"
+                child_id_node = str(strip_object(dep_pair[1].source_line))
+        label_var =  "[pos=\"" + str(var_pos[dep_pair[1].variable]) + "," + str(dep_pair[1].step*-100) +"\"]"
+        child = str(dep_pair[1].variable) + "," + str(dep_pair[1].line_number) + "\n" + str(strip_object(dep_pair[1].source_line))
+        dot_output.write("\"" + child + "\"" + label_var + ";\n")
+        if ( label_id != "" ):
+            dot_output.write("\"" + child_id_node + "\"" + label_id + ";\n")
+            dot_output.write("\"" + child_id_node + "\" -> \"" +  child + "\";\n")
+        if ( parent != "" ):
+            if ( label_id != "" ):
+                dot_output.write("\"" + parent + "\" -> \"" + child_id_node + "\";\n")
+            else:
+                dot_output.write("\"" + parent + "\" -> \"" + child + "\";\n")
+        #else:
+        #    dot_output.write("\"" + child + "\";\n")
 
     # close dot file
     dot_output.write("}")
     dot_output.close()
 
     # make graph
-    os.system("dot -Tpdf flow_diagram.dot -o flow_diagram.pdf")
+    #os.system("dot -Tpdf flow_diagram.dot -o flow_diagram.pdf")
+    os.system("neato -Tpdf -n flow_diagram.dot -o flow_diagram.pdf")
 
 # maintain a list of 'nodes' per variable (keys are variables and values are lists of nodes (in step order))
 var_nodes = {}
@@ -169,7 +202,7 @@ def process_object( source_line ):
         return {}
 
 # iterate through log and process each write. maintain a step counter (each write is a step)
-step = 0
+step = 1
 with open(log_file) as f:
     for line in f:
         curr_line = json.loads(line.strip("\n"))
@@ -210,6 +243,8 @@ with open(log_file) as f:
                             for dep_var in esprima_deps[left_var]:
                                 if ( dep_var not in variables ):
                                     variables.append(dep_var)
+                                new_child = Node( dep_var, curr_line_num, curr_source_line, step, curr_newvalid)
+                                dependencies.append((new_child, curr_node))
                     # if it is an object assignment (object id present), add node for each property (only if it is literal declaration)
                     #if ( (curr_newvalid != "null") and (curr_newvalid not in aliases) ):
                     #    obj_parts = process_object(curr_source_line)
@@ -254,8 +289,8 @@ with open(log_file) as f:
                             for alias in curr_alias_list:
                                 alias_child_node = var_nodes[alias][-1]
                                 dependencies.append((parent_node, alias_child_node, "alias update"))
+                    step += 1
                 os.system("rm temp_file")
-        step += 1
 
 plot_flow_diagram()
 
