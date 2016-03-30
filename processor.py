@@ -69,7 +69,6 @@ def strip_object( source_line ):
 def plot_flow_diagram():
     # store dot lines in a file
     dot_output = open("flow_diagram.dot", 'w')
-    #dot_output.write("strict digraph G {\nratio=compress;\nconcentrate=true;\nrankdir=LR;\n")
     dot_output.write("digraph pipeline_diagram {\ngraph[splines=true];\n")
 
     # add nodes for each id and variable (these will eventually become labels)
@@ -135,7 +134,6 @@ def plot_flow_diagram():
     dot_output.close()
 
     # make graph
-    #os.system("dot -Tpdf flow_diagram.dot -o flow_diagram.pdf")
     os.system("neato -Tpdf -n flow_diagram.dot -o flow_diagram.pdf")
 
 # maintain a list of 'nodes' per variable (keys are variables and values are lists of nodes (in step order))
