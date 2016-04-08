@@ -32,11 +32,25 @@ def get_source_line(filename, line_no):
     if ( get_source_file(filename) ):
         # file exists---in 'temp_file'
         counter = 1
+        curr_line = ""
         with open("temp_file") as c:
             for line in c:
                 if ( counter == int(line_no) ):
-                    os.system("rm temp_file")
-                    return line.strip("\n").strip()
+                    cmd_val = "nodejs validate.js '" + line + "'"
+                    proc = subprocess.Popen([cmd_val], stdout=subprocess.PIPE, shell=True)
+                    (out_val, err_val) = proc.communicate()
+                    if ( out_val != "ERROR\n" ):
+                        os.system("rm temp_file")
+                        return line.strip("\n").strip()
+                    curr_line += line.strip("\n").strip()
+                if ( counter > int(line_no) ):
+                    curr_line += line.strip("\n").strip()
+                    cmd_val = "nodejs validate.js '" + curr_line + "'"
+                    proc = subprocess.Popen([cmd_val], stdout=subprocess.PIPE, shell=True)
+                    (out_val, err_val) = proc.communicate()
+                    if ( out_val != "ERROR\n" ):
+                        os.system("rm temp_file")
+                        return curr_line.strip("\n").strip()
                 counter = counter + 1
         os.system("rm temp_file")
     else:
