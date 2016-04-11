@@ -81,7 +81,7 @@ def strip_object( source_line ):
 
 # function that adds dependency to current variable if there have never been any explicit writes to that variable
 # currently adds dependency from longest maching prefix that does have an explict write (or has been handled with this function before)
-def add_last_update_dep(child):
+def add_last_update_dep(child, handled):
     # first verify that there are no explict writes or var hasn't yet been handled
     if ( child.variable in var_nodes ):
         return
@@ -106,6 +106,9 @@ def add_last_update_dep(child):
     # then add dependency from last write in longest match to current child
     if ( best_var != "" ): # we had some match
         dependencies.append((var_nodes[best_var][-1], child))
+        # add var to list of variables so we don't try handling it again
+        var_nodes[child.variable] = [child]
+        handled.append(child.variable)
 
 
 # function to create flow diagram (in dot format)
@@ -268,6 +271,7 @@ with open(log_file) as f:
                 esprima_deps = json.loads(out.strip("\n").replace("\'", '"'))
                 # handle each left-side variable in dependency list for the line
                 for left_var in esprima_deps:
+                    handled = [] # list of vars that we have added writes for with longest match..avoids added writes for them in this iteration
                     # add parent variable to list of vars if not already there
                     if ( left_var not in variables ):
                         variables.append(left_var)
@@ -294,7 +298,7 @@ with open(log_file) as f:
                                 new_child = Node( dep_var, curr_line_num, curr_source_line, step, curr_newvalid)
                                 dependencies.append((new_child, curr_node))
                                 # add dependency for right hand side variable (from last relevant write)
-                                add_last_update_dep(new_child)
+                                add_last_update_dep(new_child, handled)
                     # if it is an object assignment (object id present), add node for each property (only if it is literal declaration)
                     #if ( (curr_newvalid != "null") and (curr_newvalid not in aliases) ):
                     #    obj_parts = process_object(curr_source_line)
@@ -332,7 +336,7 @@ with open(log_file) as f:
                         dependencies.append(("", curr_node))
                     for curr_dep in curr_esprima_deps:
                         # add dependencies from last 'write' to each variable to current node
-                        if ( curr_dep in var_nodes ):
+                        if ( curr_dep in var_nodes and curr_dep not in handled ):
                             parent_node = var_nodes[curr_dep][-1]
                             dependencies.append((parent_node, curr_node))
                             # add dependencies for aliases as well
