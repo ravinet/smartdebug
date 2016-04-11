@@ -79,6 +79,35 @@ def strip_object( source_line ):
     else:
         return ""
 
+# function that adds dependency to current variable if there have never been any explicit writes to that variable
+# currently adds dependency from longest maching prefix that does have an explict write (or has been handled with this function before)
+def add_last_update_dep(child):
+    # first verify that there are no explict writes or var hasn't yet been handled
+    if ( child.variable in var_nodes ):
+        return
+
+    orig_parts = child.variable.split(".")
+
+    # then find longest matching variable (TODO: currently doesn't consider aliases)
+    longest_match = 0 # in terms of parts split by '.'
+    best_var = ""
+    for var in var_nodes:
+        curr_count = 0
+        parts = var.split(".")
+        for x in range(0, min(len(parts), len(orig_parts))):
+            if ( orig_parts[x] == parts[x] ):
+                curr_count+=1
+            else:
+                break
+        if ( curr_count > longest_match ):
+            longest_match = curr_count
+            best_var = var
+
+    # then add dependency from last write in longest match to current child
+    if ( best_var != "" ): # we had some match
+        dependencies.append((var_nodes[best_var][-1], child))
+
+
 # function to create flow diagram (in dot format)
 def plot_flow_diagram():
     # store dot lines in a file
@@ -264,6 +293,8 @@ with open(log_file) as f:
                                     variables.append(dep_var)
                                 new_child = Node( dep_var, curr_line_num, curr_source_line, step, curr_newvalid)
                                 dependencies.append((new_child, curr_node))
+                                # add dependency for right hand side variable (from last relevant write)
+                                add_last_update_dep(new_child)
                     # if it is an object assignment (object id present), add node for each property (only if it is literal declaration)
                     #if ( (curr_newvalid != "null") and (curr_newvalid not in aliases) ):
                     #    obj_parts = process_object(curr_source_line)
