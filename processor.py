@@ -295,10 +295,15 @@ with open(log_file) as f:
                             for dep_var in esprima_deps[left_var]:
                                 if ( dep_var not in variables ):
                                     variables.append(dep_var)
-                                new_child = Node( dep_var, curr_line_num, curr_source_line, step, curr_newvalid)
-                                dependencies.append((new_child, curr_node))
-                                # add dependency for right hand side variable (from last relevant write)
-                                add_last_update_dep(new_child, handled)
+                                if ( dep_var in var_nodes ):
+                                    dependencies.append((var_nodes[dep_var][-1], curr_node))
+                                    # add dependency for right hand side variable (from last relevant write)
+                                    add_last_update_dep(curr_node, handled)
+                                else:
+                                    new_child = Node( dep_var, curr_line_num, curr_source_line, step, curr_newvalid)
+                                    dependencies.append((new_child, curr_node))
+                                    add_last_update_dep(new_child, handled)
+
                     # if it is an object assignment (object id present), add node for each property (only if it is literal declaration)
                     #if ( (curr_newvalid != "null") and (curr_newvalid not in aliases) ):
                     #    obj_parts = process_object(curr_source_line)
