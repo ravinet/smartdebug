@@ -182,6 +182,11 @@ def plot_flow_diagram():
                 dot_output.write("\"" + id_node + "\"" + id_write_label + ";\n")
                 dot_output.write("\"" + parent + "\" -> \"" + id_node + "\";\n")
 
+    for i in id_to_obj:
+        if ( id_pos[i] == 0 ):
+            lab = "[pos=\"" + str(id_pos[i]) + ",-100\"]"
+            dot_output.write("\"" + str(id_to_obj[i]) + "\"" + lab + ";\n")
+
     # close dot file
     dot_output.write("}")
     dot_output.close()
