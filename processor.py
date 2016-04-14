@@ -151,29 +151,36 @@ def plot_flow_diagram():
             dot_output.write("\"" + parent + "\"" + label_var +";\n")
         label_id = ""
         child_id_node = ""
-        if (  dep_pair[1].objid != "null" ):
-            if ( str(strip_object(dep_pair[1].source_line)) != "" ):
-                label_id =  "[pos=\"" + str(id_pos[dep_pair[1].objid]) + "," + str(dep_pair[1].step*-100) +"\"]"
-                child_id_node = str(strip_object(dep_pair[1].source_line))
-        label_var =  "[pos=\"" + str(var_pos[dep_pair[1].variable]) + "," + str(dep_pair[1].step*-100) +"\"]"
-        child = str(dep_pair[1].variable) + "," + str(dep_pair[1].line_number) + "\n" + str(strip_object(dep_pair[1].source_line))
-        dot_output.write("\"" + child + "\"" + label_var + ";\n")
-        if ( label_id != "" ):
-            dot_output.write("\"" + child_id_node + "\"" + label_id + ";\n")
-            dot_output.write("\"" + child_id_node + "\" -> \"" +  child + "\";\n")
-        if ( parent != "" ):
+        if ( not isinstance(dep_pair[1], int) ):
+            if ( dep_pair[1].objid != "null" ):
+                if ( str(strip_object(dep_pair[1].source_line)) != "" ):
+                    label_id =  "[pos=\"" + str(id_pos[dep_pair[1].objid]) + "," + str(dep_pair[1].step*-100) +"\"]"
+                    child_id_node = str(strip_object(dep_pair[1].source_line))
+            label_var =  "[pos=\"" + str(var_pos[dep_pair[1].variable]) + "," + str(dep_pair[1].step*-100) +"\"]"
+            child = str(dep_pair[1].variable) + "," + str(dep_pair[1].line_number) + "\n" + str(strip_object(dep_pair[1].source_line))
+            dot_output.write("\"" + child + "\"" + label_var + ";\n")
             if ( label_id != "" ):
-                if ( alias ):
-                    dot_output.write("\"" + id_node + "\" -> \"" + child_id_node + "\";\n")
+                dot_output.write("\"" + child_id_node + "\"" + label_id + ";\n")
+                dot_output.write("\"" + child_id_node + "\" -> \"" +  child + "\";\n")
+            if ( parent != "" ):
+                if ( label_id != "" ):
+                    if ( alias ):
+                        dot_output.write("\"" + id_node + "\" -> \"" + child_id_node + "\";\n")
+                    else:
+                        dot_output.write("\"" + parent + "\" -> \"" + child_id_node + "\";\n")
                 else:
-                    dot_output.write("\"" + parent + "\" -> \"" + child_id_node + "\";\n")
-            else:
-                if ( alias ):
-                    dot_output.write("\"" + id_node + "\" -> \"" + child + "\";\n")
-                else:
-                    dot_output.write("\"" + parent + "\" -> \"" + child + "\";\n")
-        #else:
-        #    dot_output.write("\"" + child + "\";\n")
+                    if ( alias ):
+                        dot_output.write("\"" + id_node + "\" -> \"" + child + "\";\n")
+                    else:
+                        dot_output.write("\"" + parent + "\" -> \"" + child + "\";\n")
+        else:
+            if ( not isinstance(dep_pair[0], str) ):
+                # make write for id
+                id_write_label = "[pos=\"" + str(id_pos[dep_pair[1]]) + "," + str(dep_pair[0].step*-100) +"\"]"
+                id_pos[dep_pair[1]] *= -100
+                id_node = "update"
+                dot_output.write("\"" + id_node + "\"" + id_write_label + ";\n")
+                dot_output.write("\"" + parent + "\" -> \"" + id_node + "\";\n")
 
     # close dot file
     dot_output.write("}")
@@ -271,6 +278,7 @@ with open(log_file) as f:
             curr_script = curr_line.get('script')
             curr_line_num = curr_line.get('OrigLine')
             curr_newvalid = curr_line.get('NewValId')
+            curr_parentid = curr_line.get('ParentId')
             curr_source_line = get_source_line(curr_script, curr_line_num)
             # if the script exists, get the static dependencies
             if ( get_source_file(curr_script) ):
@@ -344,10 +352,16 @@ with open(log_file) as f:
                             aliases[curr_newvalid] = [left_var]
                     if ( left_var in var_nodes ):
                         var_nodes[left_var].append(curr_node)
-                        dependencies.append(("", curr_node))
+                        if ( curr_parentid != "window" and curr_parentid != "null" ):
+                            dependencies.append((curr_node, curr_parentid))
+                        else:
+                            dependencies.append(("", curr_node))
                     else:
                         var_nodes[left_var] = [curr_node]
-                        dependencies.append(("", curr_node))
+                        if ( curr_parentid != "window" and curr_parentid != "null" ):
+                            dependencies.append((curr_node, curr_parentid))
+                        else:
+                            dependencies.append(("", curr_node))
                     for curr_dep in curr_esprima_deps:
                         # add dependencies from last 'write' to each variable to current node
                         if ( curr_dep in var_nodes and curr_dep not in handled ):
