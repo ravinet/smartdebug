@@ -195,6 +195,9 @@ aliases = {}
 # list of variable names (lhs and rhs) that will eventually be columns in the graph (need node for each of these)
 variables = []
 
+# list of id to object mappings with OBJ lines (will use this to add writes for nested objects that don't have other writes)
+id_to_obj = {}
+
 # takes in a source line that should be an object declaration, and outputs the new dictionary with keys as full variable names (top level var + key) and vals
 def process_object( source_line ):
     parts = source_line.split(" = ")
@@ -257,6 +260,12 @@ step = 1
 with open(log_file) as f:
     for line in f:
         curr_line = json.loads(line.strip("\n"))
+        if ( curr_line.get('OpType') == "OBJ" ):
+            curr_id = curr_line.get('NewValId')
+            if ( curr_id not in aliases ):
+                aliases[curr_id] = []
+            if ( curr_id not in id_to_obj ):
+                id_to_obj[curr_id] = json.loads(curr_line.get('Value').strip("\n").replace("\'",'"'))
         if ( curr_line.get('OpType') == 'WRITE' ):
             curr_var = curr_line.get('PropName')
             curr_script = curr_line.get('script')
