@@ -301,6 +301,7 @@ with open(log_file) as f:
                         variables.append(left_var)
                     # create node for current write and add node to appropriate variable list
                     curr_node = Node( left_var, curr_line_num, curr_source_line, step, curr_newvalid)
+                    add_last_update_dep(curr_node, handled)
                     curr_esprima_deps = esprima_deps[left_var]
                     key_deps = {}
                     if ( len(esprima_deps[left_var]) > 0 ):
