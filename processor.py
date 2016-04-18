@@ -105,10 +105,11 @@ def add_last_update_dep(child, handled):
 
     # then add dependency from last write in longest match to current child
     if ( best_var != "" ): # we had some match
-        dependencies.append((var_nodes[best_var][-1], child))
-        # add var to list of variables so we don't try handling it again
-        var_nodes[child.variable] = [child]
-        handled.append(child.variable)
+        if ( not (longest_match == 1 or var_nodes[best_var][-1].variable.split(".")[longest_match-1] == 'window') ): # longest match can't be 'window'
+            dependencies.append((var_nodes[best_var][-1], child))
+            # add var to list of variables so we don't try handling it again
+            var_nodes[child.variable] = [child]
+            handled.append(child.variable)
 
 
 # function to create flow diagram (in dot format)
