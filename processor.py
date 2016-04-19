@@ -137,7 +137,7 @@ def plot_flow_diagram():
         if ( dep_pair[0] != dep_pair[1] ):
             #label = ""
             alias = False
-            if ( len(dep_pair) > 2 ):
+            if ( len(dep_pair) > 2 and 'new' not in dep_pair[2] ):
                 alias = True
             parent = ""
             if ( not isinstance(dep_pair[0], str) ):
@@ -180,7 +180,9 @@ def plot_flow_diagram():
                     # make write for id
                     id_write_label = "[pos=\"" + str(id_pos[dep_pair[1]]) + "," + str(dep_pair[0].step*-100) +"\"]"
                     id_pos[dep_pair[1]] *= -100
-                    id_node = "update"
+                    id_node = dep_pair[2]
+                    if ( id_node[0:3] == 'new' ):
+                        id_node = id_node[3:]
                     dot_output.write("\"" + id_node + "\"" + id_write_label + ";\n")
                     dot_output.write("\"" + parent + "\" -> \"" + id_node + "\";\n")
 
@@ -286,6 +288,9 @@ with open(log_file) as f:
             curr_line_num = curr_line.get('OrigLine')
             curr_newvalid = curr_line.get('NewValId')
             curr_parentid = curr_line.get('ParentId')
+            curr_val = 'newupdate'
+            if ( 'Value' in curr_line ):
+                curr_val = 'new' + str(json.loads(curr_line.get('Value').strip("\n").replace("\'",'"')))
             curr_source_line = get_source_line(curr_script, curr_line_num)
             # if the script exists, get the static dependencies
             if ( get_source_file(curr_script) ):
@@ -361,13 +366,13 @@ with open(log_file) as f:
                     if ( left_var in var_nodes ):
                         var_nodes[left_var].append(curr_node)
                         if ( curr_parentid != "window" and curr_parentid != "null" ):
-                            dependencies.append((curr_node, curr_parentid))
+                            dependencies.append((curr_node, curr_parentid, curr_val))
                         else:
                             dependencies.append(("", curr_node))
                     else:
                         var_nodes[left_var] = [curr_node]
                         if ( curr_parentid != "window" and curr_parentid != "null" ):
-                            dependencies.append((curr_node, curr_parentid))
+                            dependencies.append((curr_node, curr_parentid, curr_val))
                         else:
                             dependencies.append(("", curr_node))
                     for curr_dep in curr_esprima_deps:
