@@ -118,6 +118,9 @@ def plot_flow_diagram():
     dot_output = open("flow_diagram.dot", 'w')
     dot_output.write("digraph pipeline_diagram {\ngraph[splines=true];\n")
 
+    # key is id and val is tuple (obj literal, step)
+    last_obj_nodes = {}
+
     # add nodes for each id and variable (these will eventually become labels)
     id_pos = {}
     var_pos = {}
@@ -137,54 +140,80 @@ def plot_flow_diagram():
         if ( dep_pair[0] != dep_pair[1] ):
             #label = ""
             alias = False
-            if ( len(dep_pair) > 2 and 'new' not in dep_pair[2] ):
+            if ( len(dep_pair) > 2 and 'new' not in dep_pair[2] and 'iddep' not in dep_pair[2]):
                 alias = True
             parent = ""
-            if ( not isinstance(dep_pair[0], str) ):
-                label_id = ""
-                if (  dep_pair[0].objid != "null" ):
-                    label_id = "[pos=\"" + str(id_pos[dep_pair[0].objid]) + "," + str(dep_pair[0].step*-100) +"\"]"
-                label_var = "[pos=\"" + str(var_pos[dep_pair[0].variable]) + "," + str(dep_pair[0].step*-100) +"\"]"
-                parent = str(dep_pair[0].variable) + "," + str(dep_pair[0].line_number) + "\n" + str(strip_object(dep_pair[0].source_line))
-                id_node = str(strip_object(dep_pair[0].source_line))
-                if ( id_node != "" ):
-                    dot_output.write("\"" + id_node + "\"" + label_id + ";\n")
-                    dot_output.write("\"" + id_node + "\" -> \"" + parent + "\";\n")
-                dot_output.write("\"" + parent + "\"" + label_var +";\n")
-            label_id = ""
-            child_id_node = ""
-            if ( not isinstance(dep_pair[1], int) ):
-                if ( dep_pair[1].objid != "null" ):
-                    if ( str(strip_object(dep_pair[1].source_line)) != "" ):
-                        label_id =  "[pos=\"" + str(id_pos[dep_pair[1].objid]) + "," + str(dep_pair[1].step*-100) +"\"]"
-                        child_id_node = str(strip_object(dep_pair[1].source_line))
-                label_var =  "[pos=\"" + str(var_pos[dep_pair[1].variable]) + "," + str(dep_pair[1].step*-100) +"\"]"
-                child = str(dep_pair[1].variable) + "," + str(dep_pair[1].line_number) + "\n" + str(strip_object(dep_pair[1].source_line))
-                dot_output.write("\"" + child + "\"" + label_var + ";\n")
-                if ( label_id != "" ):
-                    dot_output.write("\"" + child_id_node + "\"" + label_id + ";\n")
-                    dot_output.write("\"" + child_id_node + "\" -> \"" +  child + "\";\n")
-                if ( parent != "" ):
-                    if ( label_id != "" ):
-                        if ( alias ):
-                            dot_output.write("\"" + id_node + "\" -> \"" + child_id_node + "\";\n")
-                        else:
-                            dot_output.write("\"" + parent + "\" -> \"" + child_id_node + "\";\n")
-                    else:
-                        if ( alias ):
-                            dot_output.write("\"" + id_node + "\" -> \"" + child + "\";\n")
-                        else:
-                            dot_output.write("\"" + parent + "\" -> \"" + child + "\";\n")
+            if ( len(dep_pair) > 2 and dep_pair[2] == 'iddep' ):
+                child_label = "[pos=\"" + str(id_pos[dep_pair[0]]) + "," + str(dep_pair[3]*-100) +"\"]"
+                parent_label = "[pos=\"" + str(id_pos[dep_pair[1]]) + "," + str(dep_pair[3]*-100) +"\"]"
+                dot_output.write("\"" + str(id_to_obj[dep_pair[0]]) + "\"" + child_label + ";\n")
+                dot_output.write("\"" + str(id_to_obj[dep_pair[1]]) + "\"" + parent_label + ";\n")
+                dot_output.write("\"" + str(id_to_obj[dep_pair[1]]) + "\" -> \"" + str(id_to_obj[dep_pair[0]]) + "\";\n")
+                last_obj_nodes[dep_pair[0]] = (str(id_to_obj[dep_pair[0]]), -100)
+                last_obj_nodes[dep_pair[1]] = (str(id_to_obj[dep_pair[1]]), -100)
             else:
                 if ( not isinstance(dep_pair[0], str) ):
-                    # make write for id
-                    id_write_label = "[pos=\"" + str(id_pos[dep_pair[1]]) + "," + str(dep_pair[0].step*-100) +"\"]"
-                    id_pos[dep_pair[1]] *= -100
-                    id_node = dep_pair[2]
-                    if ( id_node[0:3] == 'new' ):
-                        id_node = id_node[3:]
-                    dot_output.write("\"" + id_node + "\"" + id_write_label + ";\n")
-                    dot_output.write("\"" + parent + "\" -> \"" + id_node + "\";\n")
+                    label_id = ""
+                    if (  dep_pair[0].objid != "null" ):
+                        label_id = "[pos=\"" + str(id_pos[dep_pair[0].objid]) + "," + str(dep_pair[0].step*-100) +"\"]"
+                    label_var = "[pos=\"" + str(var_pos[dep_pair[0].variable]) + "," + str(dep_pair[0].step*-100) +"\"]"
+                    parent = str(dep_pair[0].variable) + "," + str(dep_pair[0].line_number) + "\n" + str(strip_object(dep_pair[0].source_line))
+                    id_node = str(strip_object(dep_pair[0].source_line))
+                    if ( dep_pair[0].objid in last_obj_nodes ):
+                        if ( (dep_pair[0].step*-100) < last_obj_nodes[dep_pair[0].objid][1] ):
+                            last_obj_nodes[dep_pair[0].objid] = (str(strip_object(dep_pair[0].source_line)), (dep_pair[0].step*-100))
+                        else:
+                            if ( id_node != "" ):
+                                id_node = last_obj_nodes[dep_pair[0].objid][0]
+                    if ( id_node != "" ):
+                        dot_output.write("\"" + id_node + "\"" + label_id + ";\n")
+                        dot_output.write("\"" + id_node + "\" -> \"" + parent + "\";\n")
+                    dot_output.write("\"" + parent + "\"" + label_var +";\n")
+                label_id = ""
+                child_id_node = ""
+                if ( not isinstance(dep_pair[1], int) ):
+                    if ( dep_pair[1].objid != "null" ):
+                        if ( str(strip_object(dep_pair[1].source_line)) != "" ):
+                            label_id =  "[pos=\"" + str(id_pos[dep_pair[1].objid]) + "," + str(dep_pair[1].step*-100) +"\"]"
+                            child_id_node = str(strip_object(dep_pair[1].source_line))
+                            if ( dep_pair[1].objid in last_obj_nodes ):
+                                if ( (dep_pair[1].step*-100) < last_obj_nodes[dep_pair[1].objid][1] ):
+                                    last_obj_nodes[dep_pair[1].objid] = (str(strip_object(dep_pair[1].source_line)), (dep_pair[1].step*-100))
+                                else:
+                                    if ( label_id != "" ):
+                                        child_id_node = last_obj_nodes[dep_pair[1].objid][0]
+                    label_var =  "[pos=\"" + str(var_pos[dep_pair[1].variable]) + "," + str(dep_pair[1].step*-100) +"\"]"
+                    child = str(dep_pair[1].variable) + "," + str(dep_pair[1].line_number) + "\n" + str(strip_object(dep_pair[1].source_line))
+                    dot_output.write("\"" + child + "\"" + label_var + ";\n")
+                    if ( label_id != "" ):
+                        dot_output.write("\"" + child_id_node + "\"" + label_id + ";\n")
+                        dot_output.write("\"" + child_id_node + "\" -> \"" +  child + "\";\n")
+                    if ( parent != "" ):
+                        if ( label_id != "" ):
+                            if ( alias ):
+                                dot_output.write("\"" + id_node + "\" -> \"" + child_id_node + "\";\n")
+                            else:
+                                dot_output.write("\"" + parent + "\" -> \"" + child_id_node + "\";\n")
+                        else:
+                            if ( alias ):
+                                dot_output.write("\"" + id_node + "\" -> \"" + child + "\";\n")
+                            else:
+                                dot_output.write("\"" + parent + "\" -> \"" + child + "\";\n")
+                else:
+                    if ( not isinstance(dep_pair[0], str) ):
+                        # make write for id
+                        id_write_label = "[pos=\"" + str(id_pos[dep_pair[1]]) + "," + str(dep_pair[0].step*-100) +"\"]"
+                        id_pos[dep_pair[1]] *= -100
+                        id_node = dep_pair[2]
+                        if ( dep_pair[1] in last_obj_nodes ):
+                            if ( (dep_pair[0].step*-100) < last_obj_nodes[dep_pair[1]][1] ):
+                                last_obj_nodes[dep_pair[1]] = (str(dep_pair[2]), (dep_pair[0].step*-100))
+                            else:
+                                id_node = last_obj_nodes[dep_pair[1]][0]
+                        if ( id_node[0:3] == 'new' ):
+                            id_node = id_node[3:]
+                        dot_output.write("\"" + id_node + "\"" + id_write_label + ";\n")
+                        dot_output.write("\"" + parent + "\" -> \"" + id_node + "\";\n")
 
     for i in id_to_obj:
         if ( id_pos[i] == 0 ):
@@ -282,6 +311,10 @@ with open(log_file) as f:
                 aliases[curr_id] = []
             if ( curr_id not in id_to_obj ):
                 id_to_obj[curr_id] = json.loads(curr_line.get('Value').strip("\n").replace("\'",'"'))
+        if ( curr_line.get('OpType') == "IDDEP" ):
+            curr_child = curr_line.get('ChildId')
+            curr_parent = curr_line.get('ParentId')
+            dependencies.append((curr_child, curr_parent, 'iddep', step))
         if ( curr_line.get('OpType') == 'WRITE' ):
             curr_var = curr_line.get('PropName')
             curr_script = curr_line.get('script')
