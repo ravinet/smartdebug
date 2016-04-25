@@ -126,6 +126,7 @@ def plot_flow_diagram():
     var_pos = {}
     id_x = 0
     var_x = 1000
+    # Add column nodes for each id/variable
     for var in variables:
         dot_output.write("\"" + var + "\"[pos=\"" + str(var_x) + ",0\"];\n")
         if ( var not in var_pos ):
@@ -144,6 +145,7 @@ def plot_flow_diagram():
                 alias = True
             parent = ""
             if ( len(dep_pair) > 2 and dep_pair[2] == 'iddep' ):
+                # this is a dep from id1 to id2 (logged in makeProxy)
                 child_label = "[pos=\"" + str(id_pos[dep_pair[0]]) + "," + str(dep_pair[3]*-100) +"\"]"
                 parent_label = "[pos=\"" + str(id_pos[dep_pair[1]]) + "," + str(dep_pair[3]*-100) +"\"]"
                 dot_output.write("\"" + str(id_to_obj[dep_pair[0]]) + "\"" + child_label + ";\n")
@@ -366,25 +368,6 @@ with open(log_file) as f:
                                     new_child = Node( dep_var, curr_line_num, curr_source_line, step, curr_newvalid)
                                     dependencies.append((new_child, curr_node))
                                     add_last_update_dep(new_child, handled)
-
-                    # if it is an object assignment (object id present), add node for each property (only if it is literal declaration)
-                    #if ( (curr_newvalid != "null") and (curr_newvalid not in aliases) ):
-                    #    obj_parts = process_object(curr_source_line)
-                    #    for key in obj_parts:
-                    #        # create node for each key
-                    #        part_node = Node( key, curr_line_num, obj_parts[key], step, curr_newvalid)
-                    #        if ( key in var_nodes ):
-                    #            var_nodes[key].append(part_node)
-                    #        else:
-                    #            var_nodes[key] = [part_node]
-                    #        # add edge from original write to each sub-write
-                    #        dependencies.append((curr_node, part_node))
-                    #        # add appropriate edges from other existing vars
-                    #        if ( part_node.variable in key_deps ):
-                    #            for d in key_deps[part_node.variable]:
-                    #                if ( d in var_nodes ):
-                    #                    dependencies.append((var_nodes[d][-1], part_node))
-                    # get list of alias nodes (based on NewValId), and add current var to alias list
                     curr_alias_list = []
                     if ( curr_newvalid != "null" ):
                         if ( curr_newvalid in aliases ):
@@ -419,31 +402,4 @@ with open(log_file) as f:
                                 dependencies.append((parent_node, alias_child_node, "alias update"))
                     step += 1
                 os.system("rm temp_file")
-
 plot_flow_diagram()
-
-#TODO:
-#each time an object is created, we want to iterate throrugh it and crerate a node for each key that was written (e.g., x.test)..the source code should be the value forr that key.
-#we want to have dotted lines when aliases are created and then each time something is updated, we want to add edges to/frrom all aliases.
-
-
-#we want to treat variables individually (x and x.blah)
-#
-#what if we just store a list of dependencies which are tuples of node objects (parent, child)?
-#store alias dictionary- mapping node to node (anytime we add a dep, check if we need to add for alias as well for both parent or child)
-#
-#can we just detect aliases using the object ids?..basically anytime we find a new id, add a mapping of id to node and then all nodes for that id are aliases
-#still want to maintain a list of nodes per variable so we know what the last one is! but, we dont need to add dependencies in that list..only if there is a dep!
-#
-
-
-'''
-go through the log and for each write, we want to:
-1) get the source code line (currently from the rewritten version)...we may only care about the right side
-2) get the dependencies from esprima
-3) object properties that are written should be their own variables (we don't need to link back to the top-level obj, except we do want to keep track of when an object becomes invalid because top-level has been overwritten.
-4) for aliases, we want to to keep track of which nodes are aliases of one another---when one is updated, check the list and update the other. also, when the alias is created, add an edge for that (perhaps dotted).
-
-* perhaps we should have a class for nodes (this can store source code, line number and variable name, and step number
-* we want to keep track of time steps (each write essentially represents a step so we need a counter 
-'''
