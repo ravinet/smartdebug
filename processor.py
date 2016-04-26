@@ -2,6 +2,11 @@ import os, sys, subprocess, json, ast, re
 
 log_file = sys.argv[1]
 recorded_folder = sys.argv[2]
+specific_write = ''
+specific_step = ''
+if ( len(sys.argv) > 3 ):
+    specific_write = sys.argv[3]
+    specific_step = sys.argv[4]
 files = os.listdir(recorded_folder)
 
 # allow user to input a variable to track
@@ -454,8 +459,11 @@ with open(log_file) as f:
                     step += 1
                 os.system("rm temp_file")
 plot_flow_diagram()
-for key in node_deps:
-    print str(key) + " --> " + str(node_deps[key])
+#for key in node_deps:
+#    print str(key) + " --> " + str(node_deps[key])
 pars = []
-list_parents(("window.y,590\n", "-200"), pars)
-print pars
+if ( specific_write != '' ):
+    # Note: currently appends newline to the write (since all nodes have a newline at the end right now)
+    node = (specific_write + '\n', specific_step)
+    list_parents(node, pars)
+    print "parents for '" + specific_write + "' are: " + str(pars)
