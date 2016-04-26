@@ -157,13 +157,13 @@ def plot_flow_diagram():
                 dot_output.write("\"" + str(id_to_obj[dep_pair[1]]) + "\"" + parent_label + ";\n")
                 dot_output.write("\"" + str(id_to_obj[dep_pair[1]]) + "\" -> \"" + str(id_to_obj[dep_pair[0]]) + "\";\n")
                 # add id/steps to list of node_deps
-                if ( (str(id_to_obj[dep_pair[1]]), str(dep_pair[3]*-100)) not in node_deps ):
-                    node_deps[(str(id_to_obj[dep_pair[1]]), str(dep_pair[3]*-100))] = []
-                if ( (str(id_to_obj[dep_pair[0]]), str(dep_pair[3]*-100)) not in node_deps ):
-                    node_deps[(str(id_to_obj[dep_pair[0]]), str(dep_pair[3]*-100))] = [(str(id_to_obj[dep_pair[1]]), str(dep_pair[3]*-100))]
+                if ( (str(id_to_obj[dep_pair[1]]), str(dep_pair[3]*-100), int(dep_pair[1])) not in node_deps ):
+                    node_deps[(str(id_to_obj[dep_pair[1]]), str(dep_pair[3]*-100), int(dep_pair[1]))] = []
+                if ( (str(id_to_obj[dep_pair[0]]), str(dep_pair[3]*-100), int(dep_pair[0])) not in node_deps ):
+                    node_deps[(str(id_to_obj[dep_pair[0]]), str(dep_pair[3]*-100), int(dep_pair[0]))] = [(str(id_to_obj[dep_pair[1]]), str(dep_pair[3]*-100), int(dep_pair[1]))]
                 else:
-                    if ( (str(id_to_obj[dep_pair[1]]), str(dep_pair[3]*-100)) not in node_deps[(str(id_to_obj[dep_pair[0]]), str(dep_pair[3]*-100))] ):
-                        node_deps[(str(id_to_obj[dep_pair[0]]), str(dep_pair[3]*-100))].append((str(id_to_obj[dep_pair[1]]), str(dep_pair[3]*-100)))
+                    if ( (str(id_to_obj[dep_pair[1]]), str(dep_pair[3]*-100), int(dep_pair[1])) not in node_deps[(str(id_to_obj[dep_pair[0]]), str(dep_pair[3]*-100), int(dep_pair[0]))] ):
+                        node_deps[(str(id_to_obj[dep_pair[0]]), str(dep_pair[3]*-100), int(dep_pair[0]))].append((str(id_to_obj[dep_pair[1]]), str(dep_pair[3]*-100), int(dep_pair[1])))
                 last_obj_nodes[dep_pair[0]] = (str(id_to_obj[dep_pair[0]]), -100)
                 last_obj_nodes[dep_pair[1]] = (str(id_to_obj[dep_pair[1]]), -100)
             else:
@@ -183,16 +183,16 @@ def plot_flow_diagram():
                     if ( id_node != "" ):
                         dot_output.write("\"" + id_node + "\"" + label_id + ";\n")
                         dot_output.write("\"" + id_node + "\" -> \"" + parent + "\";\n")
-                        if ( (id_node, str(dep_pair[0].step*-100)) not in node_deps ):
-                            node_deps[(id_node, str(dep_pair[0].step*-100))] = []
-                        if ( (parent, str(dep_pair[0].step*-100)) not in node_deps ):
-                            node_deps[(parent, str(dep_pair[0].step*-100))] = [(id_node, str(dep_pair[0].step*-100))]
+                        if ( (id_node, str(dep_pair[0].step*-100), int(dep_pair[0].objid)) not in node_deps ):
+                            node_deps[(id_node, str(dep_pair[0].step*-100), int(dep_pair[0].objid))] = []
+                        if ( (parent, str(dep_pair[0].step*-100), str(dep_pair[0].variable)) not in node_deps ):
+                            node_deps[(parent, str(dep_pair[0].step*-100), str(dep_pair[0].variable))] = [(id_node, str(dep_pair[0].step*-100), int(dep_pair[0].objid))]
                         else:
-                            if ( (id_node, str(dep_pair[0].step*-100)) not in node_deps[(parent, str(dep_pair[0].step*-100))] ):
-                                node_deps[(parent, str(dep_pair[0].step*-100))].append((id_node, str(dep_pair[0].step*-100)))
+                            if ( (id_node, str(dep_pair[0].step*-100), int(dep_pair[0].objid)) not in node_deps[(parent, str(dep_pair[0].step*-100), str(dep_pair[0].variable))] ):
+                                node_deps[(parent, str(dep_pair[0].step*-100), str(dep_pair[0].variable))].append((id_node, str(dep_pair[0].step*-100), int(dep_pair[0].objid)))
                     dot_output.write("\"" + parent + "\"" + label_var +";\n")
-                    if ( (parent, str(dep_pair[0].step*-100)) not in node_deps ):
-                        node_deps[(parent, str(dep_pair[0].step*-100))] = []
+                    if ( (parent, str(dep_pair[0].step*-100), str(dep_pair[0].variable)) not in node_deps ):
+                        node_deps[(parent, str(dep_pair[0].step*-100), str(dep_pair[0].variable))] = []
                 label_id = ""
                 child_id_node = ""
                 if ( not isinstance(dep_pair[1], int) ):
@@ -208,35 +208,35 @@ def plot_flow_diagram():
                                         child_id_node = last_obj_nodes[dep_pair[1].objid][0]
                     label_var =  "[pos=\"" + str(var_pos[dep_pair[1].variable]) + "," + str(dep_pair[1].step*-100) +"\"]"
                     child = str(dep_pair[1].variable) + "," + str(dep_pair[1].line_number) + "\n" + str(strip_object(dep_pair[1].source_line))
-                    if ( (child, str(dep_pair[1].step*-100)) not in node_deps ):
-                        node_deps[(child, str(dep_pair[1].step*-100))] = []
+                    if ( (child, str(dep_pair[1].step*-100), str(dep_pair[1].variable)) not in node_deps ):
+                        node_deps[(child, str(dep_pair[1].step*-100), str(dep_pair[1].variable))] = []
                     dot_output.write("\"" + child + "\"" + label_var + ";\n")
                     if ( label_id != "" ):
                         dot_output.write("\"" + child_id_node + "\"" + label_id + ";\n")
-                        if ( (child_id_node, str(dep_pair[1].step*-100)) not in node_deps ):
-                            node_deps[(child_id_node, str(dep_pair[1].step*-100))] = []
+                        if ( (child_id_node, str(dep_pair[1].step*-100), int(dep_pair[1].objid)) not in node_deps ):
+                            node_deps[(child_id_node, str(dep_pair[1].step*-100), int(dep_pair[1].objid))] = []
                         dot_output.write("\"" + child_id_node + "\" -> \"" +  child + "\";\n")
-                        if ( (child_id_node, str(dep_pair[1].step*-100)) not in node_deps[(child, str(dep_pair[1].step*-100))] ):
-                            node_deps[(child, str(dep_pair[1].step*-100))].append((child_id_node, str(dep_pair[1].step*-100)))
+                        if ( (child_id_node, str(dep_pair[1].step*-100), int(dep_pair[1].objid)) not in node_deps[(child, str(dep_pair[1].step*-100), str(dep_pair[1].variable))] ):
+                            node_deps[(child, str(dep_pair[1].step*-100), str(dep_pair[1].variable))].append((child_id_node, str(dep_pair[1].step*-100), int(dep_pair[1].objid)))
                     if ( parent != "" ):
                         if ( label_id != "" ):
                             if ( alias ):
                                 dot_output.write("\"" + id_node + "\" -> \"" + child_id_node + "\";\n")
-                                if ( (id_node, str(dep_pair[0].step*-100)) not in node_deps[(child_id_node, str(dep_pair[1].step*-100))] ):
-                                    node_deps[(child_id_node, str(dep_pair[1].step*-100))].append((id_node, str(dep_pair[0].step*-100)))
+                                if ( (id_node, str(dep_pair[0].step*-100), int(dep_pair[0].objid)) not in node_deps[(child_id_node, str(dep_pair[1].step*-100), int(dep_pair[1].objid))] ):
+                                    node_deps[(child_id_node, str(dep_pair[1].step*-100), int(dep_pair[1].objid))].append((id_node, str(dep_pair[0].step*-100), int(dep_pair[0].objid)))
                             else:
                                 dot_output.write("\"" + parent + "\" -> \"" + child_id_node + "\";\n")
-                                if ( (parent, str(dep_pair[0].step*-100)) not in node_deps[(child_id_node, str(dep_pair[1].step*-100))] ):
-                                    node_deps[(child_id_node, str(dep_pair[1].step*-100))].append((parent, str(dep_pair[0].step*-100)))
+                                if ( (parent, str(dep_pair[0].step*-100), str(dep_pair[0].variable)) not in node_deps[(child_id_node, str(dep_pair[1].step*-100), int(dep_pair[1].objid))] ):
+                                    node_deps[(child_id_node, str(dep_pair[1].step*-100), int(dep_pair[1].objid))].append((parent, str(dep_pair[0].step*-100), str(dep_pair[0].variable)))
                         else:
                             if ( alias ):
                                 dot_output.write("\"" + id_node + "\" -> \"" + child + "\";\n")
-                                if ( (id_node, str(dep_pair[0].step*-100)) not in node_deps[(child, str(dep_pair[1].step*-100))] ):
-                                    node_deps[(child, str(dep_pair[1].step*-100))].append((id_node, str(dep_pair[0].step*-100)))
+                                if ( (id_node, str(dep_pair[0].step*-100), int(dep_pair[0].objid)) not in node_deps[(child, str(dep_pair[1].step*-100), str(dep_pair[1].variable))] ):
+                                    node_deps[(child, str(dep_pair[1].step*-100), str(dep_pair[1].variable))].append((id_node, str(dep_pair[0].step*-100), int(dep_pair[0].objid)))
                             else:
                                 dot_output.write("\"" + parent + "\" -> \"" + child + "\";\n")
-                                if ( (parent, str(dep_pair[0].step*-100)) not in node_deps[(child, str(dep_pair[1].step*-100))] ):
-                                    node_deps[(child, str(dep_pair[1].step*-100))].append((parent, str(dep_pair[0].step*-100)))
+                                if ( (parent, str(dep_pair[0].step*-100), str(dep_pair[0].variable)) not in node_deps[(child, str(dep_pair[1].step*-100), str(dep_pair[1].variable))] ):
+                                    node_deps[(child, str(dep_pair[1].step*-100), str(dep_pair[1].variable))].append((parent, str(dep_pair[0].step*-100), str(dep_pair[0].variable)))
                 else:
                     if ( not isinstance(dep_pair[0], str) ):
                         # make write for id
@@ -251,18 +251,18 @@ def plot_flow_diagram():
                         if ( id_node[0:3] == 'new' ):
                             id_node = id_node[3:]
                         dot_output.write("\"" + id_node + "\"" + id_write_label + ";\n")
-                        if ( (id_node, str(dep_pair[0].step*-100)) not in node_deps ):
-                            node_deps[(id_node, str(dep_pair[0].step*-100))] = []
+                        if ( (id_node, str(dep_pair[0].step*-100), int(dep_pair[1])) not in node_deps ):
+                            node_deps[(id_node, str(dep_pair[0].step*-100), int(dep_pair[1]))] = []
                         dot_output.write("\"" + parent + "\" -> \"" + id_node + "\";\n")
-                        if ( (parent, str(dep_pair[0].step*-100)) not in node_deps[(id_node, str(dep_pair[0].step*-100))] ):
-                            node_deps[(id_node, str(dep_pair[0].step*-100))].append((parent, str(dep_pair[0].step*-100)))
+                        if ( (parent, str(dep_pair[0].step*-100), str(dep_pair[0].variable)) not in node_deps[(id_node, str(dep_pair[0].step*-100), int(dep_pair[1]))] ):
+                            node_deps[(id_node, str(dep_pair[0].step*-100), int(dep_pair[1]))].append((parent, str(dep_pair[0].step*-100), str(dep_pair[0].variable)))
 
     for i in id_to_obj:
         if ( id_pos[i] == 0 ):
             lab = "[pos=\"" + str(id_pos[i]) + ",-100\"]"
             dot_output.write("\"" + str(id_to_obj[i]) + "\"" + lab + ";\n")
             if ( (str(id_to_obj[i]), str(-100)) not in node_deps ):
-                node_deps[(str(id_to_obj[i]), str(-100))] = []
+                node_deps[(str(id_to_obj[i]), str(-100), int(i))] = []
 
     # close dot file
     dot_output.write("}")
