@@ -273,10 +273,17 @@ def plot_flow_diagram():
 
 # function takes in a node (for a write) and lists all parent nodes that influenced it
 def list_parents(node, pars):
-    if ( node not in node_deps ):
-        print "Node: " + str(node) + " not found in node_deps"
-        return
-    for parent in node_deps[node]:
+    start = node
+    if ( len(node) == 2 ):
+        column = ''
+        for dep in node_deps:
+            if ( dep[0] == node[0] and dep[1] == node[1] ):
+                column = dep[2]
+        if ( column == '' ):
+            print "Node: " + str(node) + " not found in node_deps"
+            return
+        start = node + (column,)
+    for parent in node_deps[start]:
         if ( parent not in pars ):
             pars.append(parent)
             list_parents(parent, pars)
