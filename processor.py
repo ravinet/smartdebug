@@ -283,10 +283,27 @@ def list_parents(node, pars):
             print "Node: " + str(node) + " not found in node_deps"
             return
         start = node + (column,)
+        pars.append(start)
     for parent in node_deps[start]:
         if ( parent not in pars ):
             pars.append(parent)
             list_parents(parent, pars)
+
+# function that takes subgraph list (list of parents for a given write) and creates corresponding graph
+def make_subgraph(parents):
+    # TODO: go through parents and make list of all vars and ids. then go through parents again and plot in similar way to previous plotting function (plot all nodes in list and also go through node_deps for each parent and if any parents for each node are also in parents list, then add edges)
+    variables = []
+    ids = []
+    for node in parents:
+        if ( isinstance(node[2], str) ): # variable
+            if ( node[2] not in variables ):
+                variables.append(node[2])
+        if ( isinstance(node[2], int) ): # id
+            if ( node[2] not in ids ):
+                ids.append(node[2])
+
+    # sort ids to make graph easier to understand
+    ids.sort()
 
 
 # maintain a list of 'nodes' per variable (keys are variables and values are lists of nodes (in step order))
@@ -474,3 +491,4 @@ if ( specific_write != '' ):
     node = (specific_write + '\n', specific_step)
     list_parents(node, pars)
     print "parents for '" + specific_write + "' are: " + str(pars)
+    make_subgraph(pars)
