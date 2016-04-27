@@ -133,12 +133,12 @@ def plot_flow_diagram():
     var_x = 1000
     # Add column nodes for each id/variable
     for var in variables:
-        dot_output.write("\"" + var + "\"[pos=\"" + str(var_x) + ",0\"];\n")
+        dot_output.write("\"" + var + "\"[pos=\"" + str(var_x) + ",0\" penwidth=2 color=\"#1B05E8\"];\n")
         if ( var not in var_pos ):
             var_pos[var] = var_x
         var_x = var_x + 300
     for obj_id in aliases:
-        dot_output.write("\"" + str(obj_id) + "\"[pos=\"" + str(id_x) + ",0\"];\n")
+        dot_output.write("\"" + str(obj_id) + "\"[pos=\"" + str(id_x) + ",0\" penwidth=2 color=\"#1B05E8\"];\n")
         id_pos[obj_id] = id_x
         id_x = id_x + 300
     # iterate through dependencies and print dependency line for each tuple
@@ -320,12 +320,12 @@ def make_subgraph(parents):
     var_x = 1000
     # Add column nodes for each id/variable
     for var in variables:
-        dot_output.write("\"" + var + "\"[pos=\"" + str(var_x) + ",0\"];\n")
+        dot_output.write("\"" + var + "\"[pos=\"" + str(var_x) + ",0\" penwidth=2 color=\"#1B05E8\"];\n")
         if ( var not in var_pos ):
             var_pos[var] = var_x
         var_x = var_x + 300
     for obj_id in ids:
-        dot_output.write("\"" + str(obj_id) + "\"[pos=\"" + str(id_x) + ",0\"];\n")
+        dot_output.write("\"" + str(obj_id) + "\"[pos=\"" + str(id_x) + ",0\" penwidth=2 color=\"#1B05E8\"];\n")
         id_pos[obj_id] = id_x
         id_x = id_x + 300
 
