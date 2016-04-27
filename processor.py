@@ -292,6 +292,10 @@ def list_parents(node, pars):
 # function that takes subgraph list (list of parents for a given write) and creates corresponding graph
 def make_subgraph(parents):
     # TODO: go through parents and make list of all vars and ids. then go through parents again and plot in similar way to previous plotting function (plot all nodes in list and also go through node_deps for each parent and if any parents for each node are also in parents list, then add edges)
+
+    # sort list of parents in step order (since sorting variable names would be hard later)
+    parents = sorted(parents, key=lambda tup: tup[1])
+
     variables = []
     ids = []
     for node in parents:
@@ -305,6 +309,43 @@ def make_subgraph(parents):
     # sort ids to make graph easier to understand
     ids.sort()
 
+    # store dot lines in a file
+    dot_output = open("subgraph.dot", 'w')
+    dot_output.write("digraph pipeline_diagram {\ngraph[splines=true];\n")
+
+    # add nodes for each id and variable (these will eventually become labels)
+    id_pos = {}
+    var_pos = {}
+    id_x = 0
+    var_x = 1000
+    # Add column nodes for each id/variable
+    for var in variables:
+        dot_output.write("\"" + var + "\"[pos=\"" + str(var_x) + ",0\"];\n")
+        if ( var not in var_pos ):
+            var_pos[var] = var_x
+        var_x = var_x + 300
+    for obj_id in ids:
+        dot_output.write("\"" + str(obj_id) + "\"[pos=\"" + str(id_x) + ",0\"];\n")
+        id_pos[obj_id] = id_x
+        id_x = id_x + 300
+
+    # go through parents, and create node in graph for each one
+    for node in parents:
+        if ( isinstance(node[2], str) ): # variable
+            label_var =  "[pos=\"" + str(var_pos[node[2]]) + "," + str(node[1]) +"\"]"
+            dot_output.write("\"" + node[0] + "\"" + label_var + ";\n")
+
+    for node in parents:
+        if ( isinstance(node[2], int) ): # id
+            label_id =  "[pos=\"" + str(id_pos[node[2]]) + "," + str(node[1]) +"\"]"
+            dot_output.write("\"" + node[0] + "\"" + label_id + ";\n")
+
+    # close dot file
+    dot_output.write("}")
+    dot_output.close()
+
+    # make graph
+    os.system("neato -Tpdf -n subgraph.dot -o subgraph.pdf")
 
 # maintain a list of 'nodes' per variable (keys are variables and values are lists of nodes (in step order))
 var_nodes = {}
