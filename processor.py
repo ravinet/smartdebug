@@ -340,6 +340,13 @@ def make_subgraph(parents):
             label_id =  "[pos=\"" + str(id_pos[node[2]]) + "," + str(node[1]) +"\"]"
             dot_output.write("\"" + node[0] + "\"" + label_id + ";\n")
 
+    # add edges (only for nodes in parents list)
+    for node in parents:
+        for par in node_deps[node]:
+            if ( par in parents ):
+                # relevant dependency, so add edge
+                dot_output.write("\"" + par[0] + "\" -> \"" + node[0] + "\";\n")
+
     # close dot file
     dot_output.write("}")
     dot_output.close()
