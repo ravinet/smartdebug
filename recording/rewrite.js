@@ -14,7 +14,7 @@ if ( code[code.length-1] == "\n" ) {
 }
 // add quotes around JS code since it will be passed to metaes as a string
 code = "'" + code + "'";
-code = code.replace("\n", "\\\n");
+code = code.split("\n").join("\\\n");
 var ast = esprima.parse(code, {loc: true});
 var proxy_wrapper = {"type": "Program","body": [{"type": "ExpressionStatement","expression": {"type": "CallExpression","callee": {"type": "MemberExpression","computed": false,"object": {"type": "Identifier","name": "metaes"},"property": {"type": "Identifier","name": "evaluate"}},"arguments": []}}]};
 
