@@ -1,4 +1,4 @@
-<script>
+<script id="debugger_wrappers">
 var debugger_env = {console:console, Math: Math};
 if ( __wrappers_are_defined__ != undefined ) {
 } else {
@@ -5811,4 +5811,7 @@ var __wrappers_are_defined__ = true;
     evaluate: mainEvaluate
   };
 }));
+// remove wrappers immediately after defining callbacks/wrappers
+var t = document.getElementById("debugger_wrappers");
+t.parentNode.removeChild(t);
 </script>
