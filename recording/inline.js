@@ -1,3 +1,4 @@
+var debugger_env = {console:console, Math: Math};
 if ( __wrappers_are_defined__ != undefined ) {
 } else {
     var js_rewriting_logs = [];
