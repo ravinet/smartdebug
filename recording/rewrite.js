@@ -20,12 +20,13 @@ var proxy_wrapper = {"type": "Program","body": [{"type": "ExpressionStatement","
 
 // take body from the initial source code and put into our new anonymous function
 var body = ast.body;
+body.push({"type": "Identifier", "name": "env"});
 proxy_wrapper.body[0].expression.arguments = body;
 ast = proxy_wrapper;
 output = escodegen.generate(ast);
 // verify that there is not an extra semi-colon in arg to metaes.evaluate()
-if ( (output.substring(output.length-3) == ';);') ) {
-    output = output.substring(0, output.length-3) + ");";
+if ( (output.substring(output.length-8) == ';, env);') ) {
+    output = output.substring(0, output.length-8) + ", env);";
 }
 outname = process.argv[3] ? process.argv[3] : "out";
 fs.writeFileSync(outname, output);
