@@ -31,6 +31,7 @@ for filename in files:
     res_type = out.split("*")[0].split("=")[1]
     gzip = out.split("*")[2].split("=")[1]
     chunked = out.split("*")[1].split("=")[1]
+    name = out.split("na--me=")[1]
     # need to still handle if response is chunked and gzipped (we can't just run gzip on it)!
     if ( ("html" in res_type) or ("javascript" in res_type) ): # html or javascript file, so rewrite
         if ( "true" in chunked ): # response chunked so we must unchunk
@@ -40,25 +41,26 @@ for filename in files:
             os.system( "removeheader rewritten/" + filename + " Transfer-Encoding" )
         if ( "false" in gzip ): # html or javascript but not gzipped
             if ( "javascript" in res_type ):
-                #os.system('nodejs rewrite.js rewritten/tempfile rewritten/retempfile')
-                #os.system('mv rewritten/retempfile rewritten/tempfile')
-                os.system('cp inline.js rewritten/prependtempfile')
-                os.system('cat rewritten/tempfile >> rewritten/prependtempfile')
-                os.system('mv rewritten/prependtempfile rewritten/tempfile')
+                if ( ("esprima" not in name) and ("metaes" not in name) ):
+                    os.system('nodejs rewrite.js rewritten/tempfile rewritten/retempfile')
+                    os.system('mv rewritten/retempfile rewritten/tempfile')
+                    os.system('cp inline.js rewritten/prependtempfile')
+                    os.system('cat rewritten/tempfile >> rewritten/prependtempfile')
+                    os.system('mv rewritten/prependtempfile rewritten/tempfile')
 
-            #if ( "html" in res_type ): # rewrite all inline js in html files
-            #   os.system('python html_rewrite_linux.py rewritten/tempfile rewritten/htmltempfile')
-            #   os.system('mv rewritten/htmltempfile rewritten/tempfile')
-            #   body = open("rewritten/tempfile", 'r')
-            #   first_line = body.readline()
-            #   if ( "<!doctype html>" in first_line.lower() ):
-            #       new_file = open("rewritten/prependtempfile", 'a')
-            #       new_file.write("<!doctype html>\n")
-            #       new_file.close()
-            #   body.close()
-            #   os.system('cat inline.html >> rewritten/prependtempfile')
-            #   os.system('cat rewritten/tempfile >> rewritten/prependtempfile')
-            #   os.system('mv rewritten/prependtempfile rewritten/tempfile')
+            if ( "html" in res_type ): # rewrite all inline js in html files
+               os.system('python html_rewrite_linux.py rewritten/tempfile rewritten/htmltempfile')
+               os.system('mv rewritten/htmltempfile rewritten/tempfile')
+               body = open("rewritten/tempfile", 'r')
+               first_line = body.readline()
+               if ( "<!doctype html>" in first_line.lower() ):
+                   new_file = open("rewritten/prependtempfile", 'a')
+                   new_file.write("<!doctype html>\n")
+                   new_file.close()
+               body.close()
+               os.system('cat inline.html >> rewritten/prependtempfile')
+               os.system('cat rewritten/tempfile >> rewritten/prependtempfile')
+               os.system('mv rewritten/prependtempfile rewritten/tempfile')
 
             # get new length of response
             size = os.path.getsize('rewritten/tempfile')
@@ -71,26 +73,26 @@ for filename in files:
         else: # gzipped
             os.system("gzip -d -c rewritten/tempfile > rewritten/plaintext")
             if ( "javascript" in res_type ):
-                #os.system('nodejs rewrite.js rewritten/plaintext rewritten/retempfile')
-                #os.system('mv rewritten/retempfile rewritten/plaintext')
-                os.system('cp inline.js rewritten/prependtempfile')
+                if ( ("esprima" not in name) and ("metaes" not in name) ):
+                    os.system('nodejs rewrite.js rewritten/plaintext rewritten/retempfile')
+                    os.system('mv rewritten/retempfile rewritten/plaintext')
+                    os.system('cp inline.js rewritten/prependtempfile')
+                    os.system('cat rewritten/plaintext >> rewritten/prependtempfile')
+                    os.system('mv rewritten/prependtempfile rewritten/plaintext')
+
+            if ( "html" in res_type ): # rewrite all inline js in html files
+                os.system('python html_rewrite_linux.py rewritten/plaintext rewritten/htmltempfile')
+                os.system('mv rewritten/htmltempfile rewritten/plaintext')
+                body = open("rewritten/plaintext", 'r')
+                first_line = body.readline()
+                if ( "<!doctype html>" in first_line.lower() ):
+                    new_file = open("rewritten/prependtempfile", 'a')
+                    new_file.write("<!doctype html>\n")
+                    new_file.close()
+                body.close()
+                os.system('cat inline.html >> rewritten/prependtempfile')
                 os.system('cat rewritten/plaintext >> rewritten/prependtempfile')
                 os.system('mv rewritten/prependtempfile rewritten/plaintext')
-
-
-            #if ( "html" in res_type ): # rewrite all inline js in html files
-            #    os.system('python html_rewrite_linux.py rewritten/plaintext rewritten/htmltempfile')
-            #    os.system('mv rewritten/htmltempfile rewritten/plaintext')
-            #    body = open("rewritten/plaintext", 'r')
-            #    first_line = body.readline()
-            #    if ( "<!doctype html>" in first_line.lower() ):
-            #        new_file = open("rewritten/prependtempfile", 'a')
-            #        new_file.write("<!doctype html>\n")
-            #        new_file.close()
-            #    body.close()
-            #    os.system('cat inline.html >> rewritten/prependtempfile')
-            #    os.system('cat rewritten/plaintext >> rewritten/prependtempfile')
-            #    os.system('mv rewritten/prependtempfile rewritten/plaintext')
 
             # after modifying plaintext, gzip it again (gzipped file is 'finalfile')
             os.system( "gzip -c rewritten/plaintext > rewritten/finalfile" )
