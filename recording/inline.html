@@ -48,7 +48,12 @@ if ( __wrappers_are_defined__ != undefined ) {
         var retVal;
         var log_read = "";
         if ( new.target ) { // constructor call
-            retVal = new _date();
+            var args = Array.from(arguments);
+            if ( args.length == 0 ) {
+                retVal = new _date();
+            } else {
+                retVal = new _date(args);
+            }
             log_read = {'Function': 'window.Date', 'Return': retVal.toString()};
         } else {
             var retVal = _date();
