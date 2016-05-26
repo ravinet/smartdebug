@@ -41,5 +41,20 @@ if ( __wrappers_are_defined__ != undefined ) {
         window.js_rewriting_logs.push(JSON.stringify(log_read));
         return retVal;
     };
+
+    var _date = window.Date;
+    window.Date = function(time){
+        var retVal;
+        var log_read = "";
+        if ( new.target ) { // constructor call
+            retVal = new _date();
+            log_read = {'Function': 'window.Date', 'Return': retVal.toString()};
+        } else {
+            var retVal = _date();
+            var log_read = {'Function': 'window.Date', 'Return': retVal};
+        }
+        window.js_rewriting_logs.push(JSON.stringify(log_read));
+        return retVal;
+    };
 }
 var __wrappers_are_defined__ = true;
