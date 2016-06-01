@@ -1,4 +1,16 @@
-var debugger_env = {console:console, Math: Math};
+var debugger_env = {console:console, Math: Math, window:window};
+function interceptor(e, value, env, pause) {
+    if (e.type === 'CallExpression' && value && value.callee == Math.random ) {
+        pause()(0.2222);
+    }
+
+    if ( e.type == 'CallExpression' && value && value.callee == window.Date ) {
+        pause()("Wed Jun 01 2012 10:12:28 GMT-0400 (EDT)");
+    }
+    if ( e.type == 'NewExpression' && value && (e.callee.subProgram == 'window.Date' || e.callee.subProgram == 'Date') ) {
+        pause()(new Date("Wed Jun 01 2009 10:12:28 GMT-0400 (EDT)"));
+    }
+}
 if ( __wrappers_are_defined__ != undefined ) {
 } else {
     var js_rewriting_logs = [];
