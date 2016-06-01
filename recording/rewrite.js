@@ -21,12 +21,13 @@ var proxy_wrapper = {"type": "Program","body": [{"type": "ExpressionStatement","
 // take body from the initial source code and put into our new anonymous function
 var body = ast.body;
 body.push({"type": "Identifier", "name": "debugger_env"});
+body.push({"type": "ObjectExpression", "properties": [{"type": "Property", "key": {"type": "Identifier", "name": "interceptor"}, "computed": false, "value": {"type": "Identifier", "name": "interceptor"}, "kind": "init", "method": false, "shorthand": false}]});
 proxy_wrapper.body[0].expression.arguments = body;
 ast = proxy_wrapper;
 output = escodegen.generate(ast);
 // verify that there is not an extra semi-colon in arg to metaes.evaluate()
-if ( (output.substring(output.length-17) == ';, debugger_env);') ) {
-    output = output.substring(0, output.length-17) + ", debugger_env);";
+if ( (output.substring(output.length-47) == ';, debugger_env, { interceptor: interceptor });') ) {
+    output = output.substring(0, output.length-47) + ", debugger_env, {interceptor:interceptor});";
 }
 outname = process.argv[3] ? process.argv[3] : "out";
 fs.writeFileSync(outname, output);
