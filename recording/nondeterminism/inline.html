@@ -44,6 +44,9 @@ if ( __wrappers_are_defined__ != undefined ) {
 
     var _date = window.Date;
     window.Date = function(time){
+        var caller = get_caller(document.currentScript);
+        var stack = new Error().stack.split("\n")[1].split(":");
+        var line = stack[stack.length - 2];
         var retVal;
         var log_read = "";
         if ( new.target ) { // constructor call
@@ -53,10 +56,10 @@ if ( __wrappers_are_defined__ != undefined ) {
             } else {
                 retVal = new _date(args);
             }
-            log_read = {'Function': 'window.Date', 'Return': retVal.toString()};
+            log_read = {'Function': 'new window.Date', 'Script': caller, 'OrigLine': line, 'Return': retVal.toString()};
         } else {
             var retVal = _date();
-            var log_read = {'Function': 'window.Date', 'Return': retVal};
+            var log_read = {'Function': 'window.Date', 'Script': caller, 'OrigLine': line, 'Return': retVal};
         }
         window.js_rewriting_logs.push(JSON.stringify(log_read));
         return retVal;
