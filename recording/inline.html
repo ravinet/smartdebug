@@ -3,16 +3,44 @@ if ( __wrappers_are_defined__ == undefined ) {
     var debugger_env = {console:console, Math: Math, window:window};
     function interceptor(e, value, env, pause) {
         if (e.type === 'CallExpression' && value && value.callee == Math.random ) {
-            pause()(0.2222);
+            //pause()(0.2222);
         }
     
         if ( e.type == 'CallExpression' && value && value.callee == window.Date ) {
-            pause()("Wed Jun 01 2012 10:12:28 GMT-0400 (EDT)");
+            //pause()("Wed Jun 01 2012 10:12:28 GMT-0400 (EDT)");
         }
         if ( e.type == 'NewExpression' && value && (e.callee.subProgram == 'window.Date' || e.callee.subProgram == 'Date') ) {
-            pause()(new Date("Wed Jun 01 2009 10:12:28 GMT-0400 (EDT)"));
+            //pause()(new Date("Wed Jun 01 2009 10:12:28 GMT-0400 (EDT)"));
         }
     }
+
+    var _random = Math.random;
+    Math.random = function(){
+        if ( log_vals[nd_pointer][0] != "Math.random" ) {
+            throw "Math.random called when next nondetermistic function expected is: " + log_vals[nd_pointer][0];
+        }
+        var retVal = log_vals[nd_pointer][1];
+        nd_pointer++;
+        return retVal;
+    };
+
+    var _date = window.Date;
+    window.Date = function(time){
+        var retVal;
+        if ( new.target ) { // constructor call
+            if ( log_vals[nd_pointer][0] != "new window.Date" ) {
+                throw "new window.Date called when next nondetermistic function expected is: " + log_vals[nd_pointer][0];
+            }
+            retVal = new _date(log_vals[nd_pointer][1]);
+        } else {
+            if ( log_vals[nd_pointer][0] != "window.Date" ) {
+                throw "window.Date called when next nondetermistic function expected is: " + log_vals[nd_pointer][0];
+            }
+            var retVal = log_vals[nd_pointer][1];
+        }
+        nd_pointer++;
+        return retVal;
+    };
     
     // Source code for ESPRIMA
     (function (root, factory) {
