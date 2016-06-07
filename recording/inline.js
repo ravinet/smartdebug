@@ -13,6 +13,9 @@ if ( __wrappers_are_defined__ == undefined ) {
         }
     }
 
+    // counter for nondeterminism replay
+    nd_pointer = 0;
+
     var _random = Math.random;
     Math.random = function(){
         if ( log_vals[nd_pointer][0] != "Math.random" ) {
