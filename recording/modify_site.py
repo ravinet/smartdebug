@@ -5,18 +5,19 @@ import subprocess
 # recorded folder to be copied and rewritten
 recorded_folder = sys.argv[1]
 rewritten_folder = sys.argv[2]
+log = ""
+
+if ( len(sys.argv) > 3 ):
+    log_cmd = "python process_log.py " + sys.argv[3]
+    proc = subprocess.Popen([log_cmd], stdout=subprocess.PIPE, shell=True)
+    (log_out, log_err) = proc.communicate()
+    log = log_out.strip("\n")
 
 # temp folder to store rewritten protobufs
 os.system("rm -rf rewritten")
 os.system( "cp -r " + recorded_folder + " rewritten" )
 
 files = os.listdir("rewritten")
-
-# read in the window handler to add to top-level html
-proxy_inline = ""
-with open("inline.html") as handler:
-    for line in handler:
-        proxy_inline += line
 
 for filename in files:
     print filename
@@ -45,6 +46,10 @@ for filename in files:
                     os.system('nodejs rewrite.js rewritten/tempfile rewritten/retempfile')
                     os.system('mv rewritten/retempfile rewritten/tempfile')
                     os.system('cp inline.js rewritten/prependtempfile')
+                    if ( log != "" ):
+                        new_file = open("rewritten/prependtempfile", 'a')
+                        new_file.write("var log_vals = " + log + ";\n")
+                        new_file.close()
                     os.system('cat rewritten/tempfile >> rewritten/prependtempfile')
                     os.system('mv rewritten/prependtempfile rewritten/tempfile')
 
@@ -59,6 +64,10 @@ for filename in files:
                    new_file.close()
                body.close()
                os.system('cat inline.html >> rewritten/prependtempfile')
+               if ( log != "" ):
+                   new_file = open("rewritten/prependtempfile", 'a')
+                   new_file.write("var log_vals = " + log + ";\n</script>")
+                   new_file.close()
                os.system('cat rewritten/tempfile >> rewritten/prependtempfile')
                os.system('mv rewritten/prependtempfile rewritten/tempfile')
 
@@ -77,6 +86,10 @@ for filename in files:
                     os.system('nodejs rewrite.js rewritten/plaintext rewritten/retempfile')
                     os.system('mv rewritten/retempfile rewritten/plaintext')
                     os.system('cp inline.js rewritten/prependtempfile')
+                    if ( log != "" ):
+                        new_file = open("rewritten/prependtempfile", 'a')
+                        new_file.write("var log_vals = " + log + ";\n")
+                        new_file.close()
                     os.system('cat rewritten/plaintext >> rewritten/prependtempfile')
                     os.system('mv rewritten/prependtempfile rewritten/plaintext')
 
@@ -91,6 +104,10 @@ for filename in files:
                     new_file.close()
                 body.close()
                 os.system('cat inline.html >> rewritten/prependtempfile')
+                if ( log != "" ):
+                    new_file = open("rewritten/prependtempfile", 'a')
+                    new_file.write("var log_vals = " + log + ";\n</script>")
+                    new_file.close()
                 os.system('cat rewritten/plaintext >> rewritten/prependtempfile')
                 os.system('mv rewritten/prependtempfile rewritten/plaintext')
 
