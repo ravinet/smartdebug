@@ -41,11 +41,15 @@ for filename in files:
             os.system( "removeheader rewritten/" + filename + " Transfer-Encoding" )
         if ( "false" in gzip ): # html or javascript but not gzipped
             if ( "javascript" in res_type ):
+                os.system('nodejs rewrite.js rewritten/tempfile rewritten/retempfile')
+                os.system('mv rewritten/retempfile rewritten/tempfile')
                 os.system('cp inline.js rewritten/prependtempfile')
                 os.system('cat rewritten/tempfile >> rewritten/prependtempfile')
                 os.system('mv rewritten/prependtempfile rewritten/tempfile')
 
             if ( "html" in res_type ): # rewrite all inline js in html files
+               os.system('python html_rewrite_linux.py rewritten/tempfile rewritten/htmltempfile')
+               os.system('mv rewritten/htmltempfile rewritten/tempfile')
                body = open("rewritten/tempfile", 'r')
                first_line = body.readline()
                if ( "<!doctype html>" in first_line.lower() ):
@@ -69,11 +73,15 @@ for filename in files:
         else: # gzipped
             os.system("gzip -d -c rewritten/tempfile > rewritten/plaintext")
             if ( "javascript" in res_type ):
+                os.system('nodejs rewrite.js rewritten/plaintext rewritten/retempfile')
+                os.system('mv rewritten/retempfile rewritten/plaintext')
                 os.system('cp inline.js rewritten/prependtempfile')
                 os.system('cat rewritten/plaintext >> rewritten/prependtempfile')
                 os.system('mv rewritten/prependtempfile rewritten/plaintext')
 
             if ( "html" in res_type ): # rewrite all inline js in html files
+                os.system('python html_rewrite_linux.py rewritten/plaintext rewritten/htmltempfile')
+                os.system('mv rewritten/htmltempfile rewritten/plaintext')
                 body = open("rewritten/plaintext", 'r')
                 first_line = body.readline()
                 if ( "<!doctype html>" in first_line.lower() ):
