@@ -1,15 +1,25 @@
 <script id="debugger_wrappers">
 if ( __wrappers_are_defined__ != undefined ) {
 } else {
+    // keys are ast nodes (as strings), values are arrays [ast_unique_id, count]
     var asts_intercepted = {};
+    var ast_unique_id_counter = 0;
     function interceptor(e, value, env, pause) {
+        var unique_id = 0;
+        var ast_counter = 1;
         var curr_ast = JSON.stringify(e);
         // maintain list of ast nodes and counts
         if ( curr_ast in asts_intercepted ) {
-            asts_intercepted[curr_ast]++;
+            unique_id = asts_intercepted[curr_ast][0];
+            ast_counter = asts_intercepted[curr_ast][1] + 1;
+            asts_intercepted[curr_ast][1]++;
         } else {
-            asts_intercepted[curr_ast] = 0;
+            unique_id = ast_unique_id_counter + 1;
+            ast_unique_id_counter++;
+            asts_intercepted[curr_ast] = [ast_unique_id_counter, 0];
         }
+        var log_ast = {'AST_id': unique_id, 'AST_counter': ast_counter};
+        window.js_rewriting_logs.push(JSON.stringify(log_ast));
     }
     var js_rewriting_logs = [];
     window.addEventListener("message", function(event){
