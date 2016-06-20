@@ -13,9 +13,9 @@ if ( __wrappers_are_defined__ != undefined ) {
             ast_counter = asts_intercepted[curr_ast][1] + 1;
             asts_intercepted[curr_ast][1]++;
         } else {
-            unique_id = ast_unique_id_counter + 1;
+            unique_id = ast_unique_id_counter;
+            asts_intercepted[curr_ast] = [ast_unique_id_counter, 1];
             ast_unique_id_counter++;
-            asts_intercepted[curr_ast] = [ast_unique_id_counter, 0];
         }
         var log_ast = {'AST_id': unique_id, 'AST_counter': ast_counter};
         window.js_rewriting_logs.push(JSON.stringify(log_ast));
