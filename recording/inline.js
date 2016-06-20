@@ -1,13 +1,6 @@
 if ( __wrappers_are_defined__ == undefined ) {
     var debugger_env = {console:console, Math: Math, window:window};
 
-    // TODO: need to have AST # (id,count tuple) to look for, and new ast node as string.
-    //TODO: also need to use window rewriting here to ensure that window is assigned to properly in metaes
-    var stopping_ast_id = 0;
-    var stopping_ast_count = 1;
-
-    var new_ast = JSON.parse('{"range":[0,14],"type":"Program","body":[{"range":[0,14],"type":"ExpressionStatement","expression":{"range":[0,13],"type":"AssignmentExpression","operator":"=","left":{"range":[0,8],"type":"MemberExpression","computed":false,"object":{"range":[0,6],"type":"Identifier","name":"window"},"property":{"range":[7,8],"type":"Identifier","name":"b"}},"right":{"range":[11,13],"type":"Literal","value":10,"raw":"10"}}}],"sourceType":"script"}');
-
     // keys are ast nodes (as strings), values are arrays [ast_unique_id, count]
     var asts_intercepted = {};
     var ast_unique_id_counter = 0;

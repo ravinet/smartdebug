@@ -5,13 +5,22 @@ import subprocess
 # recorded folder to be copied and rewritten
 recorded_folder = sys.argv[1]
 rewritten_folder = sys.argv[2]
+
+# ast_to_change info
+ast_id = sys.argv[3]
+ast_count = sys.argv[4]
+new_ast_string = sys.argv[5]
+
 log = ""
 
-if ( len(sys.argv) > 3 ):
-    log_cmd = "python process_log.py " + sys.argv[3]
+if ( len(sys.argv) > 6 ):
+    log_cmd = "python process_log.py " + sys.argv[6]
     proc = subprocess.Popen([log_cmd], stdout=subprocess.PIPE, shell=True)
     (log_out, log_err) = proc.communicate()
     log = log_out.strip("\n")
+
+# make string containing ast info to add
+ast_string = "if ( __wrappers_are_defined__ == undefined ) {\nvar stopping_ast_id = " + ast_id + ";\nvar stopping_ast_count = " + ast_count + ";\nvar new_ast = JSON.parse('"+ new_ast_string + "');\n}\n"
 
 # temp folder to store rewritten protobufs
 os.system("rm -rf rewritten")
@@ -46,7 +55,10 @@ for filename in files:
                 os.system('mv rewritten/retempfile rewritten/tempfile')
                 os.system('nodejs rewrite.js rewritten/tempfile rewritten/retempfile')
                 os.system('mv rewritten/retempfile rewritten/tempfile')
-                os.system('cp inline.js rewritten/prependtempfile')
+                new_file = open("rewritten/prependtempfile", 'a')
+                new_file.write(ast_string)
+                new_file.close()
+                os.system('cat inline.js >> rewritten/prependtempfile')
                 if ( log != "" ):
                     new_file = open("rewritten/prependtempfile", 'a')
                     new_file.write("var log_vals = " + log + ";\n")
@@ -66,6 +78,9 @@ for filename in files:
                    new_file.write("<!doctype html>\n")
                    new_file.close()
                body.close()
+               new_file = open("rewritten/prependtempfile", 'a')
+               new_file.write("<script id=\"debugger_wrappers\">\n" + ast_string)
+               new_file.close()
                os.system('cat inline.html >> rewritten/prependtempfile')
                if ( log != "" ):
                    new_file = open("rewritten/prependtempfile", 'a')
@@ -93,7 +108,10 @@ for filename in files:
                 os.system('mv rewritten/retempfile rewritten/plaintext')
                 os.system('nodejs rewrite.js rewritten/plaintext rewritten/retempfile')
                 os.system('mv rewritten/retempfile rewritten/plaintext')
-                os.system('cp inline.js rewritten/prependtempfile')
+                new_file = open("rewritten/prependtempfile", 'a')
+                new_file.write(ast_string)
+                new_file.close()
+                os.system('cat inline.js >> rewritten/prependtempfile')
                 if ( log != "" ):
                     new_file = open("rewritten/prependtempfile", 'a')
                     new_file.write("var log_vals = " + log + ";\n")
@@ -113,6 +131,9 @@ for filename in files:
                     new_file.write("<!doctype html>\n")
                     new_file.close()
                 body.close()
+                new_file = open("rewritten/prependtempfile", 'a')
+                new_file.write("<script id=\"debugger_wrappers\">\n" + ast_string)
+                new_file.close()
                 os.system('cat inline.html >> rewritten/prependtempfile')
                 if ( log != "" ):
                     new_file = open("rewritten/prependtempfile", 'a')
