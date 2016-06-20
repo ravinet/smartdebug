@@ -1,15 +1,38 @@
 if ( __wrappers_are_defined__ == undefined ) {
     var debugger_env = {console:console, Math: Math, window:window};
-    function interceptor(e, value, env, pause) {
-        if (e.type === 'CallExpression' && value && value.callee == Math.random ) {
-            //pause()(0.2222);
+
+    // TODO: need to have AST # (id,count tuple) to look for, and new ast node as string.
+    //TODO: also need to use window rewriting here to ensure that window is assigned to properly in metaes
+    var stopping_ast_id = 0;
+    var stopping_ast_count = 1;
+
+    var new_ast = JSON.parse('{"range":[0,14],"type":"Program","body":[{"range":[0,14],"type":"ExpressionStatement","expression":{"range":[0,13],"type":"AssignmentExpression","operator":"=","left":{"range":[0,8],"type":"MemberExpression","computed":false,"object":{"range":[0,6],"type":"Identifier","name":"window"},"property":{"range":[7,8],"type":"Identifier","name":"b"}},"right":{"range":[11,13],"type":"Literal","value":10,"raw":"10"}}}],"sourceType":"script"}');
+
+    // keys are ast nodes (as strings), values are arrays [ast_unique_id, count]
+    var asts_intercepted = {};
+    var ast_unique_id_counter = 0;
+
+    // function to copy over all of one object's properties to another
+    // note: directly assigning e to a new AST node doesn't seem to work (neither does Object.assign())
+    function copy_obj(obj1, obj2) {
+        for (var key in obj1 ) {
+            obj2[key] = obj1[key]
         }
+    }
     
-        if ( e.type == 'CallExpression' && value && value.callee == window.Date ) {
-            //pause()("Wed Jun 01 2012 10:12:28 GMT-0400 (EDT)");
+    function interceptor(e, value, env, pause) {
+        var curr_ast = JSON.stringify(e);
+        // maintain list of ast nodes and counts
+        if ( curr_ast in asts_intercepted ) {
+            asts_intercepted[curr_ast][1]++;
+        } else {
+            asts_intercepted[curr_ast] = [ast_unique_id_counter, 1];
+            ast_unique_id_counter++;
         }
-        if ( e.type == 'NewExpression' && value && (e.callee.subProgram == 'window.Date' || e.callee.subProgram == 'Date') ) {
-            //pause()(new Date("Wed Jun 01 2009 10:12:28 GMT-0400 (EDT)"));
+
+        var current_ast_counts = asts_intercepted[curr_ast];
+        if ( current_ast_counts[0] == stopping_ast_id && current_ast_counts[1] == stopping_ast_count ) { // this is the AST to change!
+            pause(copy_obj(new_ast,e))();
         }
     }
 
