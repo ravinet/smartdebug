@@ -25,6 +25,7 @@ if ( __wrappers_are_defined__ == undefined ) {
 
         var current_ast_counts = asts_intercepted[curr_ast];
         if ( current_ast_counts[0] == stopping_ast_id && current_ast_counts[1] == stopping_ast_count ) { // this is the AST to change!
+            debugger; // allow user to inspect environment before change
             pause(copy_obj(new_ast,e))();
         }
     }
