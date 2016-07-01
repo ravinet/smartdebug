@@ -85,6 +85,45 @@ if ( __wrappers_are_defined__ != undefined ) {
         return retVal;
     };
 
+    // unique ids for settimeout and setinterval functions
+    var unique_timeout_ids = 1;
+    // mappings of unique ids above to returned value from native settimeout and setinterval functions (used to clear them)
+    var unique_timeout_id_mappings = {};
+
+    var _settimeout = window.setTimeout;
+    window.setTimeout = function(func, delay) {
+        var caller = get_caller(document.currentScript);
+        var stack = new Error().stack.split("\n")[1].split(":");
+        var line = stack[stack.length - 2];
+        var curr_id = unique_timeout_ids;
+        var wrapper_func = function() {var log_timeout = {'Function': 'setTimeout', 'Script': caller, 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': window.performance.now()};window.js_rewriting_logs.push(log_timeout);func();};
+        if ( typeof(func) == "string" ) {
+            var make_func = new Function(func);
+            var wrapper_func = function() {var log_timeout = {'Function': 'setTimeout', 'Script': caller, 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': window.performance.now()};window.js_rewriting_logs.push(log_timeout);make_func();};
+        }
+        var retVal = _settimeout(wrapper_func, delay);
+        unique_timeout_id_mappings[curr_id] = retVal;
+        unique_timeout_ids+= 1;
+        return retVal;
+    }
+
+    var _setinterval = window.setInterval;
+    window.setInterval = function(func, delay) {
+        var caller = get_caller(document.currentScript);
+        var stack = new Error().stack.split("\n")[1].split(":");
+        var line = stack[stack.length - 2];
+        var curr_id = unique_timeout_ids;
+        var wrapper_func = function() {var log_timeout = {'Function': 'setInterval', 'Script': caller, 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': window.performance.now()};window.js_rewriting_logs.push(log_timeout);func();};
+        if ( typeof(func) == "string" ) {
+            var make_func = new Function(func);
+            var wrapper_func = function() {var log_timeout = {'Function': 'setInterval', 'Script': caller, 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': window.performance.now()};window.js_rewriting_logs.push(log_timeout);make_func();};
+        }
+        var retVal = _setinterval(wrapper_func, delay);
+        unique_timeout_id_mappings[curr_id] = retVal;
+        unique_timeout_ids+= 1;
+        return retVal;
+    }
+
     function get_child_path(curr){
         child_path = [];
         child_path_tags = [];
