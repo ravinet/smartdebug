@@ -39,15 +39,15 @@ estraverse.traverse(ast, {
 });
 
 //console.log(util.inspect(ast, {depth:null}));
-var proxy_wrapper = {"type":"Program","body":[{"type":"ExpressionStatement","expression":{"type":"CallExpression","callee":{"type":"FunctionExpression","id":null,"params":[],"defaults":[],"body":{"type":"BlockStatement","body":[]},"rest":null,"generator":false,"expression":false},"arguments":[]}}]};
+//var proxy_wrapper = {"type":"Program","body":[{"type":"ExpressionStatement","expression":{"type":"CallExpression","callee":{"type":"FunctionExpression","id":null,"params":[],"defaults":[],"body":{"type":"BlockStatement","body":[]},"rest":null,"generator":false,"expression":false},"arguments":[]}}]};
 
 // take body from the initial source code and put into our new anonymous function
-var body = ast.body;
-var window_proxy = {"type": "VariableDeclaration","declarations": [{"type": "VariableDeclarator","id": {"type": "Identifier","name": "window"},"init": {"type": "NewExpression","callee": {"type": "Identifier","name": "Proxy"},"arguments": [{"type": "Identifier","name": "_window"},{"type": "Identifier","name": "window_handler"}]}}],"kind": "var"};
-body.splice(0, 0, window_proxy);
-proxy_wrapper.body[0].expression.callee.body.body = body;
-
-ast = proxy_wrapper;
+//var body = ast.body;
+//var window_proxy = {"type": "VariableDeclaration","declarations": [{"type": "VariableDeclarator","id": {"type": "Identifier","name": "window"},"init": {"type": "NewExpression","callee": {"type": "Identifier","name": "Proxy"},"arguments": [{"type": "Identifier","name": "_window"},{"type": "Identifier","name": "window_handler"}]}}],"kind": "var"};
+//body.splice(0, 0, window_proxy);
+//proxy_wrapper.body[0].expression.callee.body.body = body;
+//
+//ast = proxy_wrapper;
 output = escodegen.generate(ast).replace(/<\/script>/g, "<\\/script>");
 //console.log(output);
 outname = process.argv[3] ? process.argv[3] : "out";
@@ -376,4 +376,3 @@ function isVarDefined(varname, currentChain){
   }
   return false;
 }
-
