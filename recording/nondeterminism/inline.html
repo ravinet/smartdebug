@@ -29,7 +29,7 @@ if ( __wrappers_are_defined__ != undefined ) {
             xmlhttp.send(event.data);
         }
     }, false);
-    window.setTimeout(function(){
+    var send_log_function = function(){
         var complete_log = "";
         for (i=0; i < window.js_rewriting_logs.length; i++ ){
             complete_log = complete_log + window.js_rewriting_logs[i] + "\n"
@@ -38,7 +38,11 @@ if ( __wrappers_are_defined__ != undefined ) {
         xmlhttp = new XMLHttpRequest();
         xmlhttp.open("POST", "http://127.0.0.1:8090", true);
         xmlhttp.send(complete_log);
-    }, 6000);
+    };
+
+    send_log_function._dontlog_ = 1;
+
+    window.setTimeout(send_log_function, 6000);
 
     function get_caller(caller){
         if ( caller == null ) {
@@ -92,6 +96,10 @@ if ( __wrappers_are_defined__ != undefined ) {
 
     var _settimeout = window.setTimeout;
     window.setTimeout = function(func, delay) {
+        if ( func.hasOwnProperty('_dontlog') ) {
+            // this is our settimeout function to send logs to the server, so don't log
+            return _settimeout(func, delay);
+        }
         var caller = get_caller(document.currentScript);
         var stack = new Error().stack.split("\n")[1].split(":");
         var line = stack[stack.length - 2];
