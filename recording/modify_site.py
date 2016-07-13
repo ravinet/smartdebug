@@ -22,7 +22,7 @@ if ( len(sys.argv) > 6 ):
     event_order = log_err.strip("\n")
 
 # make string containing ast info to add
-ast_string = "if ( __wrappers_are_defined__ == undefined ) {\nvar stopping_ast_id = " + ast_id + ";\nvar stopping_ast_count = " + ast_count + ";\nvar new_ast = JSON.parse('"+ new_ast_string + "');\nvar ordered_events = " + event_order + "\n}\n"
+ast_string = "if ( __wrappers_are_defined__ == undefined ) {\nvar stopping_ast_id = " + ast_id + ";\nvar stopping_ast_count = " + ast_count + ";\nvar new_ast = JSON.parse('"+ new_ast_string + "');\nvar ordered_events = " + event_order + ";\n}\n"
 
 # temp folder to store rewritten protobufs
 os.system("rm -rf rewritten")
