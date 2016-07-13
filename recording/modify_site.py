@@ -12,15 +12,17 @@ ast_count = sys.argv[4]
 new_ast_string = sys.argv[5]
 
 log = ""
+event_order = ""
 
 if ( len(sys.argv) > 6 ):
-    log_cmd = "python process_log.py " + sys.argv[6]
-    proc = subprocess.Popen([log_cmd], stdout=subprocess.PIPE, shell=True)
+    log_cmd = "python process_timeout_log.py " + sys.argv[6]
+    proc = subprocess.Popen([log_cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (log_out, log_err) = proc.communicate()
     log = log_out.strip("\n")
+    event_order = log_err.strip("\n")
 
 # make string containing ast info to add
-ast_string = "if ( __wrappers_are_defined__ == undefined ) {\nvar stopping_ast_id = " + ast_id + ";\nvar stopping_ast_count = " + ast_count + ";\nvar new_ast = JSON.parse('"+ new_ast_string + "');\n}\n"
+ast_string = "if ( __wrappers_are_defined__ == undefined ) {\nvar stopping_ast_id = " + ast_id + ";\nvar stopping_ast_count = " + ast_count + ";\nvar new_ast = JSON.parse('"+ new_ast_string + "');\nvar ordered_events = " + event_order + "\n}\n"
 
 # temp folder to store rewritten protobufs
 os.system("rm -rf rewritten")
