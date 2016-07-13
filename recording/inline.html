@@ -5,6 +5,23 @@ if ( __wrappers_are_defined__ == undefined ) {
     var asts_intercepted = {};
     var ast_unique_id_counter = 0;
 
+    // this code block sets up another tab to control replaying events (it also sets the postmessage handler in this frame)
+    window.addEventListener("message", function(event){
+        // This is where we have to have access to the list of events (and ids) that have been registered
+        // and the recorded log so we know the order they fire in (we will want to do this with the unique ids we add since timeout ids can be reused)! Then we will want to remove the event that we fire and fire it with Function().
+
+        if( window.self == window.top ) {
+            console.log("HERE IS THE MESSAGE BACK");
+            console.log(event.data);
+        }
+    }, false);
+
+    var control_content = "<button id='replay_button' type='button'>Replay Next Event</button><script>function notify_top() {window.opener.postMessage('fire event!!!', '*');}var but = document.getElementById('replay_button');but.addEventListener('click', notify_top, false);<\/script>";
+    var windowObjectReference;
+    var strWindowFeatures = "height=200,width=200"; // making this empty string will make the window be a tab!
+    windowObjectReference = window.open("", "Replay", "");
+    windowObjectReference.document.write(control_content);
+
     // function to copy over all of one object's properties to another
     // note: directly assigning e to a new AST node doesn't seem to work (neither does Object.assign())
     function copy_obj(obj1, obj2) {
@@ -12,7 +29,7 @@ if ( __wrappers_are_defined__ == undefined ) {
             obj2[key] = obj1[key]
         }
     }
-    
+
     function interceptor(e, value, env, pause) {
         var curr_ast = JSON.stringify(e);
         // maintain list of ast nodes and counts
@@ -60,7 +77,38 @@ if ( __wrappers_are_defined__ == undefined ) {
         nd_pointer++;
         return retVal;
     };
-    
+
+    // unique ids for settimeout and setinterval functions
+    var unique_timeout_ids = 1;
+
+    // store events that need to fire
+    events_to_fire = {};
+
+    var _settimeout = window.setTimeout;
+    window.setTimeout = function(func, delay) {
+        // register the func (always as a function) and id in list to fire (don't call native setTimeout)
+        var func_to_exec = func;
+        if ( typeof(func) == "string" ) {
+            var func_to_exec = new Function(func);
+        }
+        if ( events_to_fire.indexOf(unique_timeout_ids) != -1 ) {
+            console.log("ERROR: unique ID is being reused!");
+        }
+        events_to_fire[unique_timeout_ids] = func_to_exec;
+        unique_timeout_ids+= 1;
+        //TODO: do we need to go through the logs and get the appropriate return value that setTimeout would return (and return it)?
+    }
+
+    var _setinterval = window.setInterval;
+    window.setInterval = function(func, delay) {
+        var func_to_exec = func;
+        if ( typeof(func) == "string" ) {
+            var func_to_exec = new Function(func);
+        }
+        events_to_fire[unique_timeout_ids] = func_to_exec;
+        unique_timeout_ids+= 1;
+    }
+
     // Source code for ESPRIMA
     (function (root, factory) {
         'use strict';
