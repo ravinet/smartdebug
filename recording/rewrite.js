@@ -12,7 +12,9 @@ var code = String(fs.readFileSync(process.argv[2]));
 if ( code[code.length-1] == "\n" ) {
     code = code.substring(0, code.length-1);
 }
-// add quotes around JS code since it will be passed to metaes as a string
+// add single quotes around JS code since it will be passed to metaes as a string (first escape existing single quotes)
+code = code.split("\\\'").join("\\\\'");
+code = code.split("'").join("\\\'");
 code = "'" + code + "'";
 code = code.split("\n").join("\\\n");
 var ast = esprima.parse(code, {loc: true});
