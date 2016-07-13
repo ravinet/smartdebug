@@ -7,12 +7,18 @@ if ( __wrappers_are_defined__ == undefined ) {
 
     // this code block sets up another tab to control replaying events (it also sets the postmessage handler in this frame)
     window.addEventListener("message", function(event){
-        // This is where we have to have access to the list of events (and ids) that have been registered
-        // and the recorded log so we know the order they fire in (we will want to do this with the unique ids we add since timeout ids can be reused)! Then we will want to remove the event that we fire and fire it with Function().
-
         if( window.self == window.top ) {
-            console.log("HERE IS THE MESSAGE BACK");
-            console.log(event.data);
+            if ( ordered_events.length > 0 ) {
+                // fire next event and remove it from list
+                if ( !(ordered_events[0]['UniqueID'] in events_to_fire) ) {
+                    console.log("Next event, as per log, is not yet registered!");
+                } else {
+                    events_to_fire[ordered_events[0]['UniqueID']]();
+                    ordered_events.splice(0,1);
+                }
+            } else {
+                console.log("No more events to fire!");
+            }
         }
     }, false);
 
@@ -84,6 +90,16 @@ if ( __wrappers_are_defined__ == undefined ) {
     // store events that need to fire
     events_to_fire = {};
 
+    // function that goes through the ordered events and returns the original return value
+    function get_timeout_return(id) {
+        for ( e in ordered_events ) {
+            if ( e['UniqueID'] == id ) {
+                return e['TimeoutID'];
+            }
+        }
+        return -1;
+    };
+
     var _settimeout = window.setTimeout;
     window.setTimeout = function(func, delay) {
         // register the func (always as a function) and id in list to fire (don't call native setTimeout)
@@ -91,22 +107,31 @@ if ( __wrappers_are_defined__ == undefined ) {
         if ( typeof(func) == "string" ) {
             var func_to_exec = new Function(func);
         }
-        if ( events_to_fire.indexOf(unique_timeout_ids) != -1 ) {
+        if ( unique_timeout_ids in events_to_fire ) {
             console.log("ERROR: unique ID is being reused!");
         }
         events_to_fire[unique_timeout_ids] = func_to_exec;
+        var ret_id = unique_timeout_ids;
         unique_timeout_ids+= 1;
-        //TODO: do we need to go through the logs and get the appropriate return value that setTimeout would return (and return it)?
+        return get_timeout_return(ret_id);
     }
 
     var _setinterval = window.setInterval;
     window.setInterval = function(func, delay) {
+        if ( func == undefined && delay == undefined ) {
+            return _setinterval(func, delay);
+        }
         var func_to_exec = func;
         if ( typeof(func) == "string" ) {
             var func_to_exec = new Function(func);
         }
+        if ( unique_timeout_ids in events_to_fire ) {
+            console.log("ERROR: unique ID is being reused!");
+        }
         events_to_fire[unique_timeout_ids] = func_to_exec;
+        var ret_id = unique_timeout_ids;
         unique_timeout_ids+= 1;
+        return get_timeout_return(ret_id);
     }
 
     // Source code for ESPRIMA

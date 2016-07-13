@@ -5,6 +5,29 @@ if ( __wrappers_are_defined__ == undefined ) {
     var asts_intercepted = {};
     var ast_unique_id_counter = 0;
 
+    // this code block sets up another tab to control replaying events (it also sets the postmessage handler in this frame)
+    window.addEventListener("message", function(event){
+        if( window.self == window.top ) {
+            if ( ordered_events.length > 0 ) {
+                // fire next event and remove it from list
+                if ( !(ordered_events[0]['UniqueID'] in events_to_fire) ) {
+                    console.log("Next event, as per log, is not yet registered!");
+                } else {
+                    events_to_fire[ordered_events[0]['UniqueID']]();
+                    ordered_events.splice(0,1);
+                }
+            } else {
+                console.log("No more events to fire!");
+            }
+        }
+    }, false);
+
+    var control_content = "<button id='replay_button' type='button'>Replay Next Event</button><script>function notify_top() {window.opener.postMessage('fire event!!!', '*');}var but = document.getElementById('replay_button');but.addEventListener('click', notify_top, false);<\/script>";
+    var windowObjectReference;
+    var strWindowFeatures = "height=200,width=200"; // making this empty string will make the window be a tab!
+    windowObjectReference = window.open("", "Replay", "");
+    windowObjectReference.document.write(control_content);
+
     // function to copy over all of one object's properties to another
     // note: directly assigning e to a new AST node doesn't seem to work (neither does Object.assign())
     function copy_obj(obj1, obj2) {
@@ -12,7 +35,7 @@ if ( __wrappers_are_defined__ == undefined ) {
             obj2[key] = obj1[key]
         }
     }
-    
+
     function interceptor(e, value, env, pause) {
         var curr_ast = JSON.stringify(e);
         // maintain list of ast nodes and counts
@@ -60,7 +83,57 @@ if ( __wrappers_are_defined__ == undefined ) {
         nd_pointer++;
         return retVal;
     };
-    
+
+    // unique ids for settimeout and setinterval functions
+    var unique_timeout_ids = 1;
+
+    // store events that need to fire
+    events_to_fire = {};
+
+    // function that goes through the ordered events and returns the original return value
+    function get_timeout_return(id) {
+        for ( e in ordered_events ) {
+            if ( e['UniqueID'] == id ) {
+                return e['TimeoutID'];
+            }
+        }
+        return -1;
+    };
+
+    var _settimeout = window.setTimeout;
+    window.setTimeout = function(func, delay) {
+        // register the func (always as a function) and id in list to fire (don't call native setTimeout)
+        var func_to_exec = func;
+        if ( typeof(func) == "string" ) {
+            var func_to_exec = new Function(func);
+        }
+        if ( unique_timeout_ids in events_to_fire ) {
+            console.log("ERROR: unique ID is being reused!");
+        }
+        events_to_fire[unique_timeout_ids] = func_to_exec;
+        var ret_id = unique_timeout_ids;
+        unique_timeout_ids+= 1;
+        return get_timeout_return(ret_id);
+    }
+
+    var _setinterval = window.setInterval;
+    window.setInterval = function(func, delay) {
+        if ( func == undefined && delay == undefined ) {
+            return _setinterval(func, delay);
+        }
+        var func_to_exec = func;
+        if ( typeof(func) == "string" ) {
+            var func_to_exec = new Function(func);
+        }
+        if ( unique_timeout_ids in events_to_fire ) {
+            console.log("ERROR: unique ID is being reused!");
+        }
+        events_to_fire[unique_timeout_ids] = func_to_exec;
+        var ret_id = unique_timeout_ids;
+        unique_timeout_ids+= 1;
+        return get_timeout_return(ret_id);
+    }
+
     // Source code for ESPRIMA
     (function (root, factory) {
         'use strict';
