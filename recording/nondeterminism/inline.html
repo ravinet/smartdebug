@@ -132,6 +132,40 @@ if ( __wrappers_are_defined__ != undefined ) {
         return retVal;
     }
 
+    var _cleartimeout = window.clearTimeout;
+    window.clearTimeout = function(timeoutid) {
+        var caller = get_caller(document.currentScript);
+        var stack = new Error().stack.split("\n")[1].split(":");
+        var line = stack[stack.length - 2];
+        for ( var x in unique_timeout_id_mappings ) {
+            if ( unique_timeout_id_mappings[x] == timeoutid ) {
+                // remove the key from the mappings dictionary because ids can be reused (and our logs will already have the right ids)
+                delete unique_timeout_id_mappings[x];
+                var log_timeout = {'Function': 'clearTimeout', 'Script': caller, 'OrigLine': line, 'UniqueID': x, 'TimeoutId': timeoutid, 'Time': window.performance.now()};
+                window.js_rewriting_logs.push(JSON.stringify(log_timeout));
+            }
+        }
+        var retVal = _cleartimeout(timeoutid);
+        return retVal;
+    }
+
+    var _clearinterval = window.clearInterval;
+    window.clearInterval = function(timeoutid) {
+        var caller = get_caller(document.currentScript);
+        var stack = new Error().stack.split("\n")[1].split(":");
+        var line = stack[stack.length - 2];
+        for ( var x in unique_timeout_id_mappings ) {
+            if ( unique_timeout_id_mappings[x] == timeoutid ) {
+                // remove the key from the mappings dictionary because ids can be reused (and our logs will already have the right ids)
+                delete unique_timeout_id_mappings[x];
+                var log_timeout = {'Function': 'clearInterval', 'Script': caller, 'OrigLine': line, 'UniqueID': x, 'TimeoutId': timeoutid, 'Time': window.performance.now()};
+                window.js_rewriting_logs.push(JSON.stringify(log_timeout));
+            }
+        }
+        var retVal = _clearinterval(timeoutid);
+        return retVal;
+    }
+
     function get_child_path(curr){
         child_path = [];
         child_path_tags = [];
