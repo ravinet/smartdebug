@@ -173,8 +173,9 @@ if ( __wrappers_are_defined__ != undefined ) {
     // wrap setters for all DOM 0 handlers
     var dom0_id = 0;
     for (evt in dom_event_list) {
+        var curr_evt = dom_event_list[evt];
         [Node.prototype, HTMLElement.prototype, Document.prototype].forEach(function(prt) {
-                var onEvt = 'on' + dom_event_list[evt];
+                var onEvt = 'on' + curr_evt;
                 var oldProp = Object.getOwnPropertyDescriptor(prt, onEvt)
                 if (!oldProp) {
                     return;
@@ -185,10 +186,10 @@ if ( __wrappers_are_defined__ != undefined ) {
                         if (h) {
                             var curr = dom0_id;
                             dom0_id += 1;
-                            var f = function(dom_event_list[evt]) {
-                                var log_dom0 = {'Function': 'DOM0handler', 'Type': dom_event_list[evt], 'UniqueID': curr, 'Time': window.performance.now()};
+                            var f = function(curr_evt) {
+                                var log_dom0 = {'Function': 'DOM0handler', 'Type': curr_evt, 'UniqueID': curr, 'Time': window.performance.now()};
                                 window.js_rewriting_logs.push(JSON.stringify(log_dom0));
-                                h(dom_event_list[evt]);
+                                h(curr_evt);
                             }
                             oldSetter.call(this, f);
                         }
