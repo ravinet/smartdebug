@@ -169,40 +169,13 @@ if ( __wrappers_are_defined__ != undefined ) {
     // All possible handler-triggering events, with their Event object subclass and list of handlers that must precede them.
     // Source: https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers and some from
     // https://developer.mozilla.org/en-US/docs/Web/Events.
-    var dom_event_list = {
-        "DOMContentLoaded": ofType(Event),
-        "blur": ofType(FocusEvent, ["focus"]),
-        "change": ofType(Event),
-        "click": ofType(MouseEvent),
-        "close": ofType(Event),
-        "contextmenu": ofType(MouseEvent),
-        "dblclick": ofType(MouseEvent),
-        "error": ofType(Event),
-        "focus": ofType(FocusEvent),
-        "input": ofType(Event),
-        "keydown": ofType(KeyboardEvent),
-        "keypress": ofType(KeyboardEvent),
-        "keyup": ofType(KeyboardEvent, ["keydown"]),
-        "load": ofType(Event),
-        "mouseenter": ofType(MouseEvent),
-        "mousedown": ofType(MouseEvent),
-        "mouseleave": ofType(MouseEvent, ["mouseenter"]),
-        "mousemove": ofType(MouseEvent),
-        "mouseout": ofType(MouseEvent, ["mouseover"]),
-        "mouseover": ofType(MouseEvent),
-        "mouseup": ofType(MouseEvent, ["mousedown"]),
-        "reset": ofType(Event),
-        "resize": ofType(UIEvent),
-        "scroll": ofType(UIEvent),
-        "select": ofType(UIEvent),
-        "submit": ofType(Event),
-    };
+    var dom_event_list = ["DOMContentLoaded", "blur", "change", "click", "close", "contextmenu", "dblclick", "error", "focus", "input", "keydown", "keypress", "keyup", "load", "mouseenter", "mousedown", "mouseleave", "mousemove", "mouseout", "mouseover", "mouseup", "reset", "resize", "scroll", "select", "submit"];
 
     // wrap setters for all DOM 0 handlers
     var dom0_id = 0;
     for (evt in dom_event_list) {
         [Node.prototype, HTMLElement.prototype, Document.prototype].forEach(function(prt) {
-                var onEvt = 'on' + evt;
+                var onEvt = 'on' + dom_event_list[evt];
                 var oldProp = Object.getOwnPropertyDescriptor(prt, onEvt)
                 if (!oldProp) {
                     return;
@@ -213,10 +186,10 @@ if ( __wrappers_are_defined__ != undefined ) {
                         if (h) {
                             var curr = dom0_id;
                             dom0_id += 1;
-                            var f = function(evt) {
-                                var log_dom0 = {'Function': 'DOM0handler', 'Type': evt, 'UniqueID': curr, 'Time': window.performance.now()};
+                            var f = function(dom_event_list[evt]) {
+                                var log_dom0 = {'Function': 'DOM0handler', 'Type': dom_event_list[evt], 'UniqueID': curr, 'Time': window.performance.now()};
                                 window.js_rewriting_logs.push(JSON.stringify(log_dom0));
-                                h(evt);
+                                h(dom_event_list[evt]);
                             }
                             oldSetter.call(this, f);
                         }
