@@ -21,13 +21,15 @@ if ( __wrappers_are_defined__ != undefined ) {
         window.js_rewriting_logs.push(JSON.stringify(log_ast));
     }
     var js_rewriting_logs = [];
-    window.addEventListener("message", function(event){
+    msg_func = function(event){
         if( window.self == window.top ) {
             xmlhttp = new XMLHttpRequest();
             xmlhttp.open("POST", "http://127.0.0.1:8090", true);
             xmlhttp.send(event.data);
         }
-    }, false);
+    };
+    msg_func._dontlog = 1;
+    window.addEventListener("message", msg_func, false);
     var send_log_function = function(){
         var complete_log = "";
         for (i=0; i < window.js_rewriting_logs.length; i++ ){
@@ -219,6 +221,9 @@ if ( __wrappers_are_defined__ != undefined ) {
         var capture_use = capture;
         if ( capture == undefined ) {
             capture_use = false;
+        }
+        if ( !listener.hasOwnProperty("_dontlog") ) {
+            return _addeventlistener.call(this, type, listener, capture_use, untrusted_use);
         }
         return _addeventlistener.call(this, type, wrapped_listener, capture_use, untrusted_use);
     };
