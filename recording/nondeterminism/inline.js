@@ -266,181 +266,181 @@ if ( __wrappers_are_defined__ != undefined ) {
         return [isProxy, usemap];
     }
 
-    var _mutationobserve = MutationObserver.prototype.observe;
-    MutationObserver.prototype.observe = function(target, options) {
-        // check whether this is proxy...if so, use _base or get base from weakmap
-        var isProxy = check_if_proxy(this);
-        var retVal;
-        if ( isProxy[0] ) { // this is a proxy
-            if ( isProxy[1] ) { // frozen object
-                retVal = _mutationobserve.call(baseMap.get(this), target, options);
-            } else {
-                retVal = _mutationobserve.call(this._base, target, options);
-            }
-        }
-        return retVal;
-    };
+//    var _mutationobserve = MutationObserver.prototype.observe;
+//    MutationObserver.prototype.observe = function(target, options) {
+//        // check whether this is proxy...if so, use _base or get base from weakmap
+//        var isProxy = check_if_proxy(this);
+//        var retVal;
+//        if ( isProxy[0] ) { // this is a proxy
+//            if ( isProxy[1] ) { // frozen object
+//                retVal = _mutationobserve.call(baseMap.get(this), target, options);
+//            } else {
+//                retVal = _mutationobserve.call(this._base, target, options);
+//            }
+//        }
+//        return retVal;
+//    };
+//
+//    var _eventtargetadd = EventTarget.prototype.addEventListener;
+//    EventTarget.prototype.addEventListener = function(type, listener, capture, untrusted) {
+//        var untrusted_use = untrusted;
+//        if ( untrusted == undefined ) {
+//            // mdn page unclear about what defualt value is!
+//            untrusted_use = true;
+//        }
+//        var capture_use = capture;
+//        if ( capture == undefined ) {
+//            capture_use = false;
+//        }
+//        // check whether this is proxy...if so, use _base or get base from weakmap
+//        var isProxy = check_if_proxy(this);
+//        var retVal;
+//        if ( isProxy[0] ) { // this is a proxy
+//            if ( isProxy[1] ) { // frozen object
+//                retVal = _eventtargetadd.call(baseMap.get(this), type, listener, capture_use, untrusted_use);
+//            } else {
+//                retVal = _eventtargetadd.call(this._base, type, listener, capture_use, untrusted_use);
+//            }
+//        }
+//        return retVal;
+//    };
 
-    var _eventtargetadd = EventTarget.prototype.addEventListener;
-    EventTarget.prototype.addEventListener = function(type, listener, capture, untrusted) {
-        var untrusted_use = untrusted;
-        if ( untrusted == undefined ) {
-            // mdn page unclear about what defualt value is!
-            untrusted_use = true;
-        }
-        var capture_use = capture;
-        if ( capture == undefined ) {
-            capture_use = false;
-        }
-        // check whether this is proxy...if so, use _base or get base from weakmap
-        var isProxy = check_if_proxy(this);
-        var retVal;
-        if ( isProxy[0] ) { // this is a proxy
-            if ( isProxy[1] ) { // frozen object
-                retVal = _eventtargetadd.call(baseMap.get(this), type, listener, capture_use, untrusted_use);
-            } else {
-                retVal = _eventtargetadd.call(this._base, type, listener, capture_use, untrusted_use);
-            }
-        }
-        return retVal;
-    };
-
-    var _getRandomValues = window.crypto.getRandomValues;
-    window.crypto.getRandomValues = function(c) {
-        var c_use = c;
-        if ( c.hasOwnProperty("_id") ) {
-            c_use = c._base;
-        }
-        return _getRandomValues.call(this, c_use);
-    };
-
-    var _eventtargetremove = EventTarget.prototype.removeEventListener;
-    EventTarget.prototype.removeEventListener = function(type, listener, capture) {
-        var capture_use = capture;
-        if ( capture == undefined ) {
-            capture_use = false;
-        }
-        // check whether this is proxy...if so, use _base or get base from weakmap
-        var isProxy = check_if_proxy(this);
-        var retVal;
-        if ( isProxy[0] ) { // this is a proxy
-            if ( isProxy[1] ) { // frozen object
-                retVal = _eventtargetremove.call(baseMap.get(this), type, listener, capture_use);
-            } else {
-                retVal = _eventtargetremove.call(this._base, type, listener, capture_use);
-            }
-        }
-        return retVal;
-    };
-
-    var _xhropen = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
-        var async_use = async;
-        if ( async == undefined ) {
-            async_use = true;
-        }
-        var user_use = user;
-        if ( user == undefined ) {
-            user_use = "";
-        }
-        var password_use = password;
-        if ( password == undefined ) {
-            password_use = "";
-        }
-
-        // check whether this is proxy...if so, use _base or get base from weakmap
-        var isProxy = check_if_proxy(this);
-        var retVal;
-        if ( isProxy[0] ) { // this is a proxy
-            if ( isProxy[1] ) { // frozen object
-                retVal = _xhropen.call(baseMap.get(this), method, url, async_use, user_use, password_use);
-            } else {
-                retVal = _xhropen.call(this._base, method, url, async_use, user_use, password_use);
-            }
-        } else {
-            retVal = _xhropen.call(this, method, url, async_use, user_use, password_use);
-        }
-
-        return retVal;
-    };
-
-    var _xhrsetheader = XMLHttpRequest.prototype.setRequestHeader;
-    XMLHttpRequest.prototype.setRequestHeader = function(header, value) {
-        // check whether this is proxy...if so, use _base or get base from weakmap
-        var isProxy = check_if_proxy(this);
-        var retVal;
-        if ( isProxy[0] ) { // this is a proxy
-            if ( isProxy[1] ) { // frozen object
-                retVal = _xhrsetheader.call(baseMap.get(this), header, value);
-            } else {
-                retVal = _xhrsetheader.call(this._base, header, value);
-            }
-        } else {
-            retVal = _xhrsetheader.call(this, header, value);
-        }
-        return retVal;
-    };
-
-    var _xhrgetresponseheader = XMLHttpRequest.prototype.getResponseHeader;
-    XMLHttpRequest.prototype.getResponseHeader = function(header) {
-        // check whether this is proxy...if so, use _base or get base from weakmap
-        var isProxy = check_if_proxy(this);
-        var retVal;
-        if ( isProxy[0] ) { // this is a proxy
-            if ( isProxy[1] ) { // frozen object
-                retVal = _xhrgetresponseheader.call(baseMap.get(this), header);
-            } else {
-                retVal = _xhrgetresponseheader.call(this._base, header);
-            }
-        } else {
-            retVal = _xhrgetresponseheader.call(this, base, header);
-        }
-        return retVal;
-    };
-
-    var _xhrsend = XMLHttpRequest.prototype.send;
-    XMLHttpRequest.prototype.send = function(data) {
-        // check whether this is proxy...if so, use _base or get base from weakmap
-        var isProxy = check_if_proxy(this);
-        var retVal;
-        if ( isProxy[0] ) { // this is a proxy
-            if ( isProxy[1] ) { // frozen object
-                if ( data == undefined ) {
-                    retVal = _xhrsend.call(baseMap.get(this));
-                } else {
-                    retVal = _xhrsend.call(baseMap.get(this), data);
-                }
-            } else {
-                if ( data == undefined ) {
-                    retVal = _xhrsend.call(this._base);
-                } else {
-                    retVal = _xhrsend.call(this._base, data);
-                }
-            }
-        } else {
-            if ( data == undefined ) {
-                retVal = _xhrsend.call(this);
-            } else {
-                retVal = _xhrsend.call(this, data);
-            }
-        }
-        return retVal;
-    };
-
-    var _alert = window.alert;
-    window.alert = function(arg){
-                       var caller = get_caller( document.currentScript);
-                       var stack = new Error().stack.split("\n")[1].split(":");
-                       var line = stack[stack.length - 2];
-                       var log_read = {'OpType': 'READ', 'ParentId': 'window', 'PropName': 'screen', 'NewValId': 'null', 'OldValId': 'null', 'script': caller, 'OrigLine': line};
-                       var log_write = {'OpType': 'WRITE', 'ParentId': 'window', 'PropName': 'screen', 'NewValId': 'null', 'OldValId': 'null', 'script': caller, 'OrigLine': line};
-                       //console.log( JSON.stringify( log_read ) );
-                       window.js_rewriting_logs.push(JSON.stringify(log_read));
-                       //console.log( JSON.stringify( log_write ) );
-                       window.js_rewriting_logs.push(JSON.stringify(log_write));
-                       var retVal = _alert.call(this._base, arg);
-                       return retVal;
-                   };
+//    var _getRandomValues = window.crypto.getRandomValues;
+//    window.crypto.getRandomValues = function(c) {
+//        var c_use = c;
+//        if ( c.hasOwnProperty("_id") ) {
+//            c_use = c._base;
+//        }
+//        return _getRandomValues.call(this, c_use);
+//    };
+//
+//    var _eventtargetremove = EventTarget.prototype.removeEventListener;
+//    EventTarget.prototype.removeEventListener = function(type, listener, capture) {
+//        var capture_use = capture;
+//        if ( capture == undefined ) {
+//            capture_use = false;
+//        }
+//        // check whether this is proxy...if so, use _base or get base from weakmap
+//        var isProxy = check_if_proxy(this);
+//        var retVal;
+//        if ( isProxy[0] ) { // this is a proxy
+//            if ( isProxy[1] ) { // frozen object
+//                retVal = _eventtargetremove.call(baseMap.get(this), type, listener, capture_use);
+//            } else {
+//                retVal = _eventtargetremove.call(this._base, type, listener, capture_use);
+//            }
+//        }
+//        return retVal;
+//    };
+//
+//    var _xhropen = XMLHttpRequest.prototype.open;
+//    XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+//        var async_use = async;
+//        if ( async == undefined ) {
+//            async_use = true;
+//        }
+//        var user_use = user;
+//        if ( user == undefined ) {
+//            user_use = "";
+//        }
+//        var password_use = password;
+//        if ( password == undefined ) {
+//            password_use = "";
+//        }
+//
+//        // check whether this is proxy...if so, use _base or get base from weakmap
+//        var isProxy = check_if_proxy(this);
+//        var retVal;
+//        if ( isProxy[0] ) { // this is a proxy
+//            if ( isProxy[1] ) { // frozen object
+//                retVal = _xhropen.call(baseMap.get(this), method, url, async_use, user_use, password_use);
+//            } else {
+//                retVal = _xhropen.call(this._base, method, url, async_use, user_use, password_use);
+//            }
+//        } else {
+//            retVal = _xhropen.call(this, method, url, async_use, user_use, password_use);
+//        }
+//
+//        return retVal;
+//    };
+//
+//    var _xhrsetheader = XMLHttpRequest.prototype.setRequestHeader;
+//    XMLHttpRequest.prototype.setRequestHeader = function(header, value) {
+//        // check whether this is proxy...if so, use _base or get base from weakmap
+//        var isProxy = check_if_proxy(this);
+//        var retVal;
+//        if ( isProxy[0] ) { // this is a proxy
+//            if ( isProxy[1] ) { // frozen object
+//                retVal = _xhrsetheader.call(baseMap.get(this), header, value);
+//            } else {
+//                retVal = _xhrsetheader.call(this._base, header, value);
+//            }
+//        } else {
+//            retVal = _xhrsetheader.call(this, header, value);
+//        }
+//        return retVal;
+//    };
+//
+//    var _xhrgetresponseheader = XMLHttpRequest.prototype.getResponseHeader;
+//    XMLHttpRequest.prototype.getResponseHeader = function(header) {
+//        // check whether this is proxy...if so, use _base or get base from weakmap
+//        var isProxy = check_if_proxy(this);
+//        var retVal;
+//        if ( isProxy[0] ) { // this is a proxy
+//            if ( isProxy[1] ) { // frozen object
+//                retVal = _xhrgetresponseheader.call(baseMap.get(this), header);
+//            } else {
+//                retVal = _xhrgetresponseheader.call(this._base, header);
+//            }
+//        } else {
+//            retVal = _xhrgetresponseheader.call(this, base, header);
+//        }
+//        return retVal;
+//    };
+//
+//    var _xhrsend = XMLHttpRequest.prototype.send;
+//    XMLHttpRequest.prototype.send = function(data) {
+//        // check whether this is proxy...if so, use _base or get base from weakmap
+//        var isProxy = check_if_proxy(this);
+//        var retVal;
+//        if ( isProxy[0] ) { // this is a proxy
+//            if ( isProxy[1] ) { // frozen object
+//                if ( data == undefined ) {
+//                    retVal = _xhrsend.call(baseMap.get(this));
+//                } else {
+//                    retVal = _xhrsend.call(baseMap.get(this), data);
+//                }
+//            } else {
+//                if ( data == undefined ) {
+//                    retVal = _xhrsend.call(this._base);
+//                } else {
+//                    retVal = _xhrsend.call(this._base, data);
+//                }
+//            }
+//        } else {
+//            if ( data == undefined ) {
+//                retVal = _xhrsend.call(this);
+//            } else {
+//                retVal = _xhrsend.call(this, data);
+//            }
+//        }
+//        return retVal;
+//    };
+//
+//    var _alert = window.alert;
+//    window.alert = function(arg){
+//                       var caller = get_caller( document.currentScript);
+//                       var stack = new Error().stack.split("\n")[1].split(":");
+//                       var line = stack[stack.length - 2];
+//                       var log_read = {'OpType': 'READ', 'ParentId': 'window', 'PropName': 'screen', 'NewValId': 'null', 'OldValId': 'null', 'script': caller, 'OrigLine': line};
+//                       var log_write = {'OpType': 'WRITE', 'ParentId': 'window', 'PropName': 'screen', 'NewValId': 'null', 'OldValId': 'null', 'script': caller, 'OrigLine': line};
+//                       //console.log( JSON.stringify( log_read ) );
+//                       window.js_rewriting_logs.push(JSON.stringify(log_read));
+//                       //console.log( JSON.stringify( log_write ) );
+//                       window.js_rewriting_logs.push(JSON.stringify(log_write));
+//                       var retVal = _alert.call(this._base, arg);
+//                       return retVal;
+//                   };
 
     var _apply = Function.prototype.apply;
     Function.prototype.apply = function(thisArg, argArray){
