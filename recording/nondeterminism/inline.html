@@ -166,6 +166,90 @@ if ( __wrappers_are_defined__ != undefined ) {
         return retVal;
     }
 
+    // All possible handler-triggering events, with their Event object subclass and list of handlers that must precede them.
+    // Source: https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers and some from
+    // https://developer.mozilla.org/en-US/docs/Web/Events.
+    var dom_event_list = {
+        "DOMContentLoaded": ofType(Event),
+        "blur": ofType(FocusEvent, ["focus"]),
+        "change": ofType(Event),
+        "click": ofType(MouseEvent),
+        "close": ofType(Event),
+        "contextmenu": ofType(MouseEvent),
+        "dblclick": ofType(MouseEvent),
+        "error": ofType(Event),
+        "focus": ofType(FocusEvent),
+        "input": ofType(Event),
+        "keydown": ofType(KeyboardEvent),
+        "keypress": ofType(KeyboardEvent),
+        "keyup": ofType(KeyboardEvent, ["keydown"]),
+        "load": ofType(Event),
+        "mouseenter": ofType(MouseEvent),
+        "mousedown": ofType(MouseEvent),
+        "mouseleave": ofType(MouseEvent, ["mouseenter"]),
+        "mousemove": ofType(MouseEvent),
+        "mouseout": ofType(MouseEvent, ["mouseover"]),
+        "mouseover": ofType(MouseEvent),
+        "mouseup": ofType(MouseEvent, ["mousedown"]),
+        "reset": ofType(Event),
+        "resize": ofType(UIEvent),
+        "scroll": ofType(UIEvent),
+        "select": ofType(UIEvent),
+        "submit": ofType(Event),
+    };
+
+    // wrap setters for all DOM 0 handlers
+    var dom0_id = 0;
+    for (evt in dom_event_list) {
+        [Node.prototype, HTMLElement.prototype, Document.prototype].forEach(function(prt) {
+                var onEvt = 'on' + evt;
+                var oldProp = Object.getOwnPropertyDescriptor(prt, onEvt)
+                if (!oldProp) {
+                    return;
+                }
+                var oldSetter = oldProp.set;
+                Object.defineProperty(prt, onEvt, {
+                    set: function(h) {
+                        if (h) {
+                            var curr = dom0_id;
+                            dom0_id += 1;
+                            var f = function(evt) {
+                                var log_dom0 = {'Function': 'DOM0handler', 'Type': evt, 'UniqueID': curr, 'Time': window.performance.now()};
+                                window.js_rewriting_logs.push(JSON.stringify(log_dom0));
+                                h(evt);
+                            }
+                            oldSetter.call(this, f);
+                        }
+                    }});
+        });
+    }
+
+    // shim for addEventListener (wraps DOM 2 handlers to log before firing)
+    var dom2_id = 0;
+    _addeventlistener = EventTarget.prototype.addEventListener;
+    EventTarget.prototype.addEventListener = function(type, listener, capture, untrusted) {
+        var wrapped_listener = listener;
+        if ( !listener.hasOwnProperty('_windowlistener') ){
+            var curr_id = dom2_id;
+            dom2_id += 1;
+            var wrapped_listener = function () {
+                var log_dom2 = {'Function': 'DOM2handler', 'Type': type, 'UniqueID': curr_id, 'Time': window.performance.now()};
+                window.js_rewriting_logs.push(JSON.stringify(log_dom2));
+                listener();
+            };
+        }
+        var untrusted_use = untrusted;
+        if ( untrusted == undefined ) {
+            // mdn page unclear about what defualt value is!
+            untrusted_use = true;
+        }
+        var capture_use = capture;
+        if ( capture == undefined ) {
+            capture_use = false;
+        }
+        return _addeventlistener.call(this, type, wrapped_listener, capture_use, untrusted_use);
+    };
+
     function get_child_path(curr){
         child_path = [];
         child_path_tags = [];
