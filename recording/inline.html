@@ -8,21 +8,26 @@ if ( __wrappers_are_defined__ == undefined ) {
     // this code block sets up another tab to control replaying events (it also sets the postmessage handler in this frame)
     window.addEventListener("message", function(event){
         if( window.self == window.top ) {
-            if ( ordered_events.length > 0 ) {
-                // fire next event and remove it from list
-                if ( !(ordered_events[0]['UniqueID'] in events_to_fire) ) {
-                    console.log("Next event, as per log, is not yet registered!");
+            if ( event.data == "timer" ) {
+                if ( ordered_events.length > 0 ) {
+                    // fire next event and remove it from list
+                    if ( !(ordered_events[0]['UniqueID'] in events_to_fire) ) {
+                        console.log("Next event, as per log, is not yet registered!");
+                    } else {
+                        events_to_fire[ordered_events[0]['UniqueID']]();
+                        ordered_events.splice(0,1);
+                    }
                 } else {
-                    events_to_fire[ordered_events[0]['UniqueID']]();
-                    ordered_events.splice(0,1);
+                    console.log("No more events to fire!");
                 }
-            } else {
-                console.log("No more events to fire!");
+            }
+            if ( event.data == "dom" ) {
+                console.log("going to fire dom");
             }
         }
     }, false);
 
-    var control_content = "<button id='replay_button' type='button'>Replay Next Event</button><script>function notify_top() {window.opener.postMessage('fire event!!!', '*');}var but = document.getElementById('replay_button');but.addEventListener('click', notify_top, false);<\/script>";
+    var control_content = "<button id='replay_button' type='button'>Replay Next Timer Event</button><button id='dom_replay_button' type='button'>Replay Next DOM Event</button><script>function notify_top() {window.opener.postMessage('timer', '*');}var but = document.getElementById('replay_button');but.addEventListener('click', notify_top, false);function notify_top_dom() {window.opener.postMessage('dom', '*');}var but_dom = document.getElementById('dom_replay_button');but_dom.addEventListener('click', notify_top_dom, false);<\/script>";
     var windowObjectReference;
     var strWindowFeatures = "height=200,width=200"; // making this empty string will make the window be a tab!
     windowObjectReference = window.open("", "Replay", "");
