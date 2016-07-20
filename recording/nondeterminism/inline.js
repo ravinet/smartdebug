@@ -167,66 +167,103 @@ if ( __wrappers_are_defined__ != undefined ) {
         return retVal;
     }
 
+    // list of DOM events that we care about (further broken down into 'Mouse' and 'Keyboard'
+    var dom_event_list = ["click", "contextmenu", "dblclick", "mouseenter", "mousedown", "mouseleave", "mousemove", "mouseout", "mouseover", "mouseup", "keydown", "keypress", "keyup"];
+    var dom_mouse_events = ["click", "contextmenu", "dblclick", "mouseenter", "mousedown", "mouseleave", "mousemove", "mouseout", "mouseover", "mouseup"];
+    var dom_keyboard_events = ["keydown", "keypress", "keyup"];
+
+    // function that takes a DOM node and returns a path (path starts from current node and goes up to root, also if second child then path number is 1)
+    function get_just_child_path(curr){
+        child_path = [];
+        while ( curr.parentNode != null ) {
+           var children = curr.parentNode.children;
+           for (j = 0; j < children.length; j++){
+               if( children[j] == curr ){
+                   child_path.push(j);
+               }
+           }
+           curr = curr.parentNode;
+        }
+        return JSON.stringify(child_path);
+    }
+
+    // handler for events that we will attach to window
+    log_handler = function (eve) {
+        if ( dom_mouse_events.indexOf(eve.type) != -1 ) {
+            log_click = {"Type": "DOMEvent", "EventType": "MouseEvent", "Event": eve.type, "Target": get_just_child_path(eve.target), "altKey": eve.altKey, "button": eve.button, "buttons": eve.buttons, "clientX": eve.clientX, "clientY": eve.clientY, "ctrlKey": eve.ctrlKey, "metaKey": eve.metaKey, "movementX": eve.movementX, "movementY": eve.movementY, "offsetX": eve.offsetX, "offsetY": eve.offsetY, "pageX": eve.pageX, "pageY": eve.pageY, "region": eve.region, "relatedTarget": eve.relatedTarget, "screenX": eve.screenX, "screenY": eve.screenY, "shiftKey": eve.shiftKey, "which": eve.which, "mozPressure": eve.mozPressure, "mozInputSource": eve.mozInputSource, "webkitForce": eve.webkitForce, "x": eve.x, "y": eve.y};
+            window.js_rewriting_logs.push(JSON.stringify(log_click));
+        }
+        if ( dom_keyboard_events.indexOf(eve.type) != -1 ) {
+            log_keyboard = {"Type": "DomEvent", "EventType": "KeyboardEvent", "Event": eve.type, "Target": get_just_child_path(eve.target), "altKey": eve.altKey, "code": eve.code, "ctrlKey": eve.ctrlKey, "isComposing": eve.isComposing, "key": eve.key, "keyIdentifier": eve.keyIdentifier, "keyLocation": eve.keyLocation, "locale": eve.locale, "location": eve.location, "metaKey": eve.metaKey, "repeat": eve.repeat, "shiftKey": eve.shiftKey};
+            window.js_rewriting_logs.push(JSON.stringify(log_keyboard));
+        }
+    };
+
+    // add handlers to window to log all event handlers that fire (do this for all DOM events)
+    for ( var x in dom_event_list ) {
+        window.addEventListener(dom_event_list[x], log_handler, false);
+    }
+
     // All possible handler-triggering events, with their Event object subclass and list of handlers that must precede them.
     // Source: https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers and some from
     // https://developer.mozilla.org/en-US/docs/Web/Events.
-    var dom_event_list = ["DOMContentLoaded", "blur", "change", "click", "close", "contextmenu", "dblclick", "error", "focus", "input", "keydown", "keypress", "keyup", "load", "mouseenter", "mousedown", "mouseleave", "mousemove", "mouseout", "mouseover", "mouseup", "reset", "resize", "scroll", "select", "submit"];
-
-    // wrap setters for all DOM 0 handlers
-    var dom0_id = 0;
-    for (evt in dom_event_list) {
-        var curr_evt = dom_event_list[evt];
-        [Node.prototype, HTMLElement.prototype, Document.prototype].forEach(function(prt) {
-                var onEvt = 'on' + curr_evt;
-                var oldProp = Object.getOwnPropertyDescriptor(prt, onEvt)
-                if (!oldProp) {
-                    return;
-                }
-                var oldSetter = oldProp.set;
-                Object.defineProperty(prt, onEvt, {
-                    set: function(h) {
-                        if (h) {
-                            var curr = dom0_id;
-                            dom0_id += 1;
-                            var f = function(curr_evt) {
-                                var log_dom0 = {'Function': 'DOM0handler', 'Type': curr_evt, 'UniqueID': curr, 'Time': window.performance.now()};
-                                window.js_rewriting_logs.push(JSON.stringify(log_dom0));
-                                h(curr_evt);
-                            }
-                            oldSetter.call(this, f);
-                        }
-                    }});
-        });
-    }
+//    var dom_event_list = ["DOMContentLoaded", "blur", "change", "click", "close", "contextmenu", "dblclick", "error", "focus", "input", "keydown", "keypress", "keyup", "load", "mouseenter", "mousedown", "mouseleave", "mousemove", "mouseout", "mouseover", "mouseup", "reset", "resize", "scroll", "select", "submit"];
+//
+//    // wrap setters for all DOM 0 handlers
+//    var dom0_id = 0;
+//    for (evt in dom_event_list) {
+//        var curr_evt = dom_event_list[evt];
+//        [Node.prototype, HTMLElement.prototype, Document.prototype].forEach(function(prt) {
+//                var onEvt = 'on' + curr_evt;
+//                var oldProp = Object.getOwnPropertyDescriptor(prt, onEvt)
+//                if (!oldProp) {
+//                    return;
+//                }
+//                var oldSetter = oldProp.set;
+//                Object.defineProperty(prt, onEvt, {
+//                    set: function(h) {
+//                        if (h) {
+//                            var curr = dom0_id;
+//                            dom0_id += 1;
+//                            var f = function(curr_evt) {
+//                                var log_dom0 = {'Function': 'DOM0handler', 'Type': curr_evt, 'UniqueID': curr, 'Time': window.performance.now()};
+//                                window.js_rewriting_logs.push(JSON.stringify(log_dom0));
+//                                h(curr_evt);
+//                            }
+//                            oldSetter.call(this, f);
+//                        }
+//                    }});
+//        });
+//    }
 
     // shim for addEventListener (wraps DOM 2 handlers to log before firing)
-    var dom2_id = 0;
-    _addeventlistener = EventTarget.prototype.addEventListener;
-    EventTarget.prototype.addEventListener = function(type, listener, capture, untrusted) {
-        var wrapped_listener = listener;
-        if ( !listener.hasOwnProperty('_windowlistener') ){
-            var curr_id = dom2_id;
-            dom2_id += 1;
-            var wrapped_listener = function () {
-                var log_dom2 = {'Function': 'DOM2handler', 'Type': type, 'UniqueID': curr_id, 'Time': window.performance.now()};
-                window.js_rewriting_logs.push(JSON.stringify(log_dom2));
-                listener();
-            };
-        }
-        var untrusted_use = untrusted;
-        if ( untrusted == undefined ) {
-            // mdn page unclear about what defualt value is!
-            untrusted_use = true;
-        }
-        var capture_use = capture;
-        if ( capture == undefined ) {
-            capture_use = false;
-        }
-        if ( !listener.hasOwnProperty("_dontlog") ) {
-            return _addeventlistener.call(this, type, listener, capture_use, untrusted_use);
-        }
-        return _addeventlistener.call(this, type, wrapped_listener, capture_use, untrusted_use);
-    };
+//    var dom2_id = 0;
+//    _addeventlistener = EventTarget.prototype.addEventListener;
+//    EventTarget.prototype.addEventListener = function(type, listener, capture, untrusted) {
+//        var wrapped_listener = listener;
+//        if ( !listener.hasOwnProperty('_windowlistener') ){
+//            var curr_id = dom2_id;
+//            dom2_id += 1;
+//            var wrapped_listener = function () {
+//                var log_dom2 = {'Function': 'DOM2handler', 'Type': type, 'UniqueID': curr_id, 'Time': window.performance.now()};
+//                window.js_rewriting_logs.push(JSON.stringify(log_dom2));
+//                listener();
+//            };
+//        }
+//        var untrusted_use = untrusted;
+//        if ( untrusted == undefined ) {
+//            // mdn page unclear about what defualt value is!
+//            untrusted_use = true;
+//        }
+//        var capture_use = capture;
+//        if ( capture == undefined ) {
+//            capture_use = false;
+//        }
+//        if ( !listener.hasOwnProperty("_dontlog") ) {
+//            return _addeventlistener.call(this, type, listener, capture_use, untrusted_use);
+//        }
+//        return _addeventlistener.call(this, type, wrapped_listener, capture_use, untrusted_use);
+//    };
 
     function get_child_path(curr){
         child_path = [];
