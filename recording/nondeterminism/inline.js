@@ -184,7 +184,7 @@ if ( __wrappers_are_defined__ != undefined ) {
            }
            curr = curr.parentNode;
         }
-        return JSON.stringify(child_path);
+        return child_path;
     }
 
     // handler for events that we will attach to window
