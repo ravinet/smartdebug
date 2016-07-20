@@ -35,11 +35,11 @@ if ( __wrappers_are_defined__ == undefined ) {
                     // fire next event and remove it from list
                     curr_dom_log = dom_ordered_events[0];
                     if ( curr_dom_log['Type'] == "MouseEvent" ) {
-                        var curr_event = new MouseEvent(curr_dom_log["Event"], curr_dom_log["mouseEventInit"]);
+                        var curr_event = new MouseEvent(curr_dom_log["Event"], curr_dom_log["EventInit"]);
                         dispatchEvent.call(get_dom_node_ref(curr_dom_log["Target"]), curr_event);
                     }
                     if ( curr_dom_log['Type'] == "KeyboardEvent" ) {
-                        var curr_event = new KeyboardEvent(curr_dom_log["Event"], curr_dom_log["keyboardEventInit"]);
+                        var curr_event = new KeyboardEvent(curr_dom_log["Event"], curr_dom_log["EventInit"]);
                         dispatchEvent.call(get_dom_node_ref(curr_dom_log["Target"]), curr_event);
                     }
                     dom_ordered_events.splice(0,1);
