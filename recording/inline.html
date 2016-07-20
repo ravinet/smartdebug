@@ -5,6 +5,15 @@ if ( __wrappers_are_defined__ == undefined ) {
     var asts_intercepted = {};
     var ast_unique_id_counter = 0;
 
+    // function that takes child path and returns reference to the corresponding DOM node
+    function get_dom_node_ref(path) {
+        var curr_node = document; // this should be reference to <html> node
+        for ( var j = path.length - 1; j > -1; j-- ) {
+            curr_node = curr_node.children[path[j]];
+        }
+        return curr_node;
+    }
+
     // this code block sets up another tab to control replaying events (it also sets the postmessage handler in this frame)
     window.addEventListener("message", function(event){
         if( window.self == window.top ) {
@@ -22,7 +31,21 @@ if ( __wrappers_are_defined__ == undefined ) {
                 }
             }
             if ( event.data == "dom" ) {
-                console.log("going to fire dom");
+                if ( dom_ordered_events.length > 0 ) {
+                    // fire next event and remove it from list
+                    curr_dom_log = dom_ordered_events[0];
+                    if ( curr_dom_log['Type'] == "MouseEvent" ) {
+                        var curr_event = new MouseEvent(curr_dom_log["Event"], curr_dom_log["mouseEventInit"]);
+                        dispatchEvent.call(get_dom_node_ref(curr_dom_log["Target"]), curr_event);
+                    }
+                    if ( curr_dom_log['Type'] == "KeyboardEvent" ) {
+                        var curr_event = new KeyboardEvent(curr_dom_log["Event"], curr_dom_log["keyboardEventInit"]);
+                        dispatchEvent.call(get_dom_node_ref(curr_dom_log["Target"]), curr_event);
+                    }
+                    dom_ordered_events.splice(0,1);
+                } else {
+                    console.log("No more dom events to fire!");
+                }
             }
         }
     }, false);
