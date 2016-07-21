@@ -83,6 +83,8 @@ for filename in files:
                    new_file.close()
                body.close()
                new_file = open("rewritten/prependtempfile", 'a')
+               if ( "index" in res_type ):
+                   new_file.write("<iframe id='invisframe' frameborder='0' style='overflow:hidden;overflow-x:hidden;overflow-y:hidden;position:absolute;' height='100%' width='100%'></iframe>")
                new_file.write("<script id=\"debugger_wrappers\">\n" + ast_string)
                new_file.close()
                os.system('cat inline.html >> rewritten/prependtempfile')
@@ -136,6 +138,8 @@ for filename in files:
                     new_file.close()
                 body.close()
                 new_file = open("rewritten/prependtempfile", 'a')
+                if ( "index" in res_type ):
+                    new_file.write("<iframe id='invisframe' frameborder='0' style='overflow:hidden;overflow-x:hidden;overflow-y:hidden;position:absolute;' height='100%' width='100%'></iframe>")
                 new_file.write("<script id=\"debugger_wrappers\">\n" + ast_string)
                 new_file.close()
                 os.system('cat inline.html >> rewritten/prependtempfile')

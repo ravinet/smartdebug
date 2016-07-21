@@ -9,7 +9,11 @@ if ( __wrappers_are_defined__ == undefined ) {
     function get_dom_node_ref(path) {
         var curr_node = document; // this should be reference to <html> node
         for ( var j = path.length - 1; j > -1; j-- ) {
-            curr_node = curr_node.children[path[j]];
+            if ( curr_node.children[path[j]].id == 'invisframe' ) { // this is our invisible iframe used during replay (we should pretend it isn't there)
+                curr_node = curr_node.children[path[j]+1];
+            } else {
+                curr_node = curr_node.children[path[j]];
+            }
         }
         return curr_node;
     }
