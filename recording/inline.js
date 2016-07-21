@@ -34,11 +34,11 @@ if ( __wrappers_are_defined__ == undefined ) {
                 if ( dom_ordered_events.length > 0 ) {
                     // fire next event and remove it from list
                     curr_dom_log = dom_ordered_events[0];
-                    if ( curr_dom_log['Type'] == "MouseEvent" ) {
+                    if ( curr_dom_log['EventType'] == "MouseEvent" ) {
                         var curr_event = new MouseEvent(curr_dom_log["Event"], curr_dom_log["EventInit"]);
                         dispatchEvent.call(get_dom_node_ref(curr_dom_log["Target"]), curr_event);
                     }
-                    if ( curr_dom_log['Type'] == "KeyboardEvent" ) {
+                    if ( curr_dom_log['EventType'] == "KeyboardEvent" ) {
                         var curr_event = new KeyboardEvent(curr_dom_log["Event"], curr_dom_log["EventInit"]);
                         dispatchEvent.call(get_dom_node_ref(curr_dom_log["Target"]), curr_event);
                     }
