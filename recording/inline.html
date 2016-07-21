@@ -55,6 +55,7 @@ if ( __wrappers_are_defined__ == undefined ) {
     var strWindowFeatures = "height=200,width=200"; // making this empty string will make the window be a tab!
     windowObjectReference = window.open("", "Replay", "");
     windowObjectReference.document.write(control_content);
+    windowObjectReference.document.close();
 
     // function to copy over all of one object's properties to another
     // note: directly assigning e to a new AST node doesn't seem to work (neither does Object.assign())
