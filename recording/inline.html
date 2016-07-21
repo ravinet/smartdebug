@@ -54,12 +54,19 @@ if ( __wrappers_are_defined__ == undefined ) {
         }
     }, false);
 
-    var control_content = "<button id='replay_button' type='button'>Replay Next Timer Event</button><button id='dom_replay_button' type='button'>Replay Next DOM Event</button><script>function notify_top() {window.opener.postMessage('timer', '*');}var but = document.getElementById('replay_button');but.addEventListener('click', notify_top, false);function notify_top_dom() {window.opener.postMessage('dom', '*');}var but_dom = document.getElementById('dom_replay_button');but_dom.addEventListener('click', notify_top_dom, false);<\/script>";
-    var windowObjectReference;
-    var strWindowFeatures = "height=200,width=200"; // making this empty string will make the window be a tab!
-    windowObjectReference = window.open("", "Replay", "");
-    windowObjectReference.document.write(control_content);
-    windowObjectReference.document.close();
+    // create controller window (once original page has loaded)
+    // Note that we are doing this because of a bug in Firefox version 46:
+    // Firefox allows events to fire (not just get added to the event queue) when paused with an F12-style debugger
+    function create_controller() {
+        var control_content = "<button id='replay_button' type='button'>Replay Next Timer Event</button><button id='dom_replay_button' type='button'>Replay Next DOM Event</button><script>function notify_top() {window.opener.postMessage('timer', '*');}var but = document.getElementById('replay_button');but.addEventListener('click', notify_top, false);function notify_top_dom() {window.opener.postMessage('dom', '*');}var but_dom = document.getElementById('dom_replay_button');but_dom.addEventListener('click', notify_top_dom, false);<\/script>";
+        var windowObjectReference;
+        var strWindowFeatures = "height=200,width=200"; // making this empty string will make the window be a tab!
+        windowObjectReference = window.open("", "Replay", "");
+        windowObjectReference.document.write(control_content);
+        windowObjectReference.document.close();
+    };
+
+    document.addEventListener("DOMContentLoaded", create_controller, false);
 
     // function to copy over all of one object's properties to another
     // note: directly assigning e to a new AST node doesn't seem to work (neither does Object.assign())
