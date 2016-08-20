@@ -16,14 +16,23 @@ ordered_dom_events = []
 # list of nondeterminism calls (date, random)...list of tuples (type, return_val)
 return_list = []
 
+start_wall_clock_time = 0
+
 with open(log) as file1:
     for line1 in file1:
         if ( "Listening on" not in line1 and "END OF LOG" not in line1 ): 
             curr_entry = json.loads(line1[0:len(line1)-1])
             if ( curr_entry.get('Function') in nondeterminism_types ):
+                if ( curr_entry.get('Function') != "Math.random" ):
+                    curr_time = float(curr_entry.get('Time'))
+                    if ( curr_time < start_wall_clock_time or start_wall_clock_time == 0 ):
+                        start_wall_clock_time = curr_time
                 return_list.append((curr.get('Function'), curr.get('Return')))
             if ( curr_entry.get('Function') in event_types ):
                 ordered_events.append((curr_entry.get('UniqueID'), curr_entry.get('TimeoutId'), curr_entry.get('Time')))
+                curr_time = float(curr_entry.get('Time'))
+                if ( curr_time < start_wall_clock_time or start_wall_clock_time == 0 ):
+                    start_wall_clock_time = curr_time
             if ( curr_entry.get('Type') == "DOMEvent" ):
                 ordered_dom_events.append(curr_entry)
 
@@ -33,5 +42,5 @@ for e in ordered_events:
     curr_log = {'UniqueID': e[0], 'TimeoutID': e[1], 'Time': e[2]}
     event_out.append(curr_log)
 
-print json.dumps(return_list)
+print str(start_wall_clock_time) + "-,-" + json.dumps(return_list)
 print >> sys.stderr, json.dumps(event_out) + "----" + json.dumps(ordered_dom_events)

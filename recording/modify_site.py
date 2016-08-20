@@ -19,12 +19,14 @@ if ( len(sys.argv) > 6 ):
     log_cmd = "python process_timeout_log.py " + sys.argv[6]
     proc = subprocess.Popen([log_cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (log_out, log_err) = proc.communicate()
-    log = log_out.strip("\n")
+    log_out = log_out.strip("\n")
+    start_wall_clock = log_out.split("-,-")[0]
+    log = log_out.split("-,-")[1]
     event_order = log_err.strip("\n").split("----")[0]
     dom_event_order = log_err.strip("\n").split("----")[1]
 
 # make string containing ast info to add
-ast_string = "if ( __wrappers_are_defined__ == undefined ) {\nvar stopping_ast_id = " + ast_id + ";\nvar stopping_ast_count = " + ast_count + ";\nvar new_ast = JSON.parse('"+ new_ast_string + "');\nvar ordered_events = " + event_order + ";\nvar dom_ordered_events = " + dom_event_order + ";\n}\n"
+ast_string = "if ( __wrappers_are_defined__ == undefined ) {\nvar stopping_ast_id = " + ast_id + ";\nvar stopping_ast_count = " + ast_count + ";\nvar new_ast = JSON.parse('"+ new_ast_string + "');\nvar ordered_events = " + event_order + ";\nvar dom_ordered_events = " + dom_event_order + ";\nwindow.upper_wall_clock = " + str(start_wall_clock) + ";\nwindow.lower_wall_clock = 0;\n}\n"
 
 # temp folder to store rewritten protobufs
 os.system("rm -rf rewritten")
