@@ -1,4 +1,4 @@
-import os, sys, json
+import os, sys, json, numpy
 
 log = sys.argv[1]
 
@@ -17,6 +17,8 @@ ordered_dom_events = []
 return_list = []
 
 start_wall_clock_time = 0
+date_diffs = []
+last_date = 0
 
 with open(log) as file1:
     for line1 in file1:
@@ -27,6 +29,14 @@ with open(log) as file1:
                     curr_time = float(curr_entry.get('Time'))
                     if ( curr_time < start_wall_clock_time or start_wall_clock_time == 0 ):
                         start_wall_clock_time = curr_time
+                    # compute date diff
+                    curr_ms = float(curr_entry.get('msTime'))
+                    if ( last_date == 0 ): # first date call
+                        last_date = curr_ms
+                    else:
+                        curr_diff = curr_ms - last_date
+                        last_date = curr_ms
+                        date_diffs.append(curr_diff)
                 return_list.append((curr.get('Function'), curr.get('Return')))
             if ( curr_entry.get('Function') in event_types ):
                 ordered_events.append((curr_entry.get('UniqueID'), curr_entry.get('TimeoutId'), curr_entry.get('Time')))
@@ -42,5 +52,5 @@ for e in ordered_events:
     curr_log = {'UniqueID': e[0], 'TimeoutID': e[1], 'Time': e[2]}
     event_out.append(curr_log)
 
-print str(start_wall_clock_time) + "-,-" + json.dumps(return_list)
+print str(start_wall_clock_time) + "-,-" + str(numpy.average(date_diffs)) + "-,-" + json.dumps(return_list)
 print >> sys.stderr, json.dumps(event_out) + "----" + json.dumps(ordered_dom_events)
