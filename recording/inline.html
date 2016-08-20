@@ -28,7 +28,14 @@ if ( __wrappers_are_defined__ == undefined ) {
                         console.log("Next event, as per log, is not yet registered!");
                     } else {
                         events_to_fire[ordered_events[0]['UniqueID']]();
+                        // update lower and upper wall clock time bounds!
+                        lower_wall_clock = events_to_fire[ordered_events[0]['Time']];
                         ordered_events.splice(0,1);
+                        if ( ordered_events.length > 0 ) { // more events left for upper bound
+                            upper_wall_clock = events_to_fire[ordered_events[0]['Time']];
+                        } else {
+                            upper_wall_clock = lower_wall_clock + 10; // for now, assume 10 microseconds higher
+                        }
                     }
                 } else {
                     console.log("No more events to fire!");
@@ -123,6 +130,18 @@ if ( __wrappers_are_defined__ == undefined ) {
         nd_pointer++;
         return retVal;
     };
+
+    // function that returns estimate of 'current wall clock time' using log
+    function curr_wall_clock_time() {
+        // current doesn't take arguments, but uses the global lower/upper bounds and modifies them accordingly
+        if ( upper_wall_clock < lower_wall_clock ) {
+            throw "Upper bound on current wall clock time is less than lower"
+        }
+        // currently returns 40% between the two (note that this has to remain monotonically increasing!)
+        var curr = lower_wall_clock + 0.4(upper_wall_clock-lower_wall_clock);
+        lower_wall_clock = curr;
+        return curr;
+    }
 
     // unique ids for settimeout and setinterval functions
     var unique_timeout_ids = 1;
