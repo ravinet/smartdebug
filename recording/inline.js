@@ -106,29 +106,13 @@ if ( __wrappers_are_defined__ == undefined ) {
     var _random = Math.random;
     Math.random = function(){
         if ( log_vals[nd_pointer][0] != "Math.random" ) {
-            console.log("Math.random called when next nondetermistic function expected is: " + log_vals[nd_pointer][0]);
+            throw "Math.random called when next nondetermistic function expected is: " + log_vals[nd_pointer][0];
+        }
+        if ( len(log_vals) <= nd_pointer ) { // run out of logs!
             // since math.random is 'random', just return a new random value!
             return _random();
         }
         var retVal = log_vals[nd_pointer][1];
-        nd_pointer++;
-        return retVal;
-    };
-
-    var _date = window.Date;
-    window.Date = function(time){
-        var retVal;
-        if ( new.target ) { // constructor call
-            if ( log_vals[nd_pointer][0] != "new window.Date" ) {
-                throw "new window.Date called when next nondetermistic function expected is: " + log_vals[nd_pointer][0];
-            }
-            retVal = new _date(log_vals[nd_pointer][1]);
-        } else {
-            if ( log_vals[nd_pointer][0] != "window.Date" ) {
-                throw "window.Date called when next nondetermistic function expected is: " + log_vals[nd_pointer][0];
-            }
-            var retVal = log_vals[nd_pointer][1];
-        }
         nd_pointer++;
         return retVal;
     };
@@ -144,6 +128,40 @@ if ( __wrappers_are_defined__ == undefined ) {
         lower_wall_clock = curr;
         return curr;
     }
+
+    var _date = window.Date;
+    window.Date = function(time){
+        var retVal;
+        if ( new.target ) { // constructor call
+            if ( log_vals[nd_pointer][0] != "new window.Date" ) {
+                throw "new window.Date called when next nondetermistic function expected is: " + log_vals[nd_pointer][0];
+            }
+            if ( len(log_vals) <= nd_pointer ) { // run out of logs!
+                // return curr_wall_clock + avg_date_diff
+                var ret = (curr_wall_clock_time)*1000 + avg_date_diff;
+                lower_wall_clock = ret;
+                upper_wall_clock = ret + 10;
+                retVal = new _date(ret);
+            } else {
+                retVal = new _date(log_vals[nd_pointer][1]);
+            }
+        } else {
+            if ( log_vals[nd_pointer][0] != "window.Date" ) {
+                throw "window.Date called when next nondetermistic function expected is: " + log_vals[nd_pointer][0];
+            }
+            if ( len(log_vals) <= nd_pointer ) { // run out of logs!
+                // return curr_wall_clock + avg_date_diff
+                var ret = (curr_wall_clock_time)*1000 + avg_date_diff;
+                lower_wall_clock = ret;
+                upper_wall_clock = ret + 10;
+                retVal = ret;
+            } else {
+                var retVal = log_vals[nd_pointer][1];
+            }
+        }
+        nd_pointer++;
+        return retVal;
+    };
 
     // unique ids for settimeout and setinterval functions
     var unique_timeout_ids = 1;
