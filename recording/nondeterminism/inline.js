@@ -81,10 +81,10 @@ if ( __wrappers_are_defined__ != undefined ) {
             } else {
                 retVal = new _date(args);
             }
-            log_read = {'Function': 'new window.Date', 'Script': caller, 'OrigLine': line, 'Return': retVal.toString()};
+            log_read = {'Function': 'new window.Date', 'Script': caller, 'OrigLine': line, 'Return': retVal.toString(), 'Time': window.performance.now()};
         } else {
             var retVal = _date();
-            var log_read = {'Function': 'window.Date', 'Script': caller, 'OrigLine': line, 'Return': retVal};
+            var log_read = {'Function': 'window.Date', 'Script': caller, 'OrigLine': line, 'Return': retVal, 'Time': window.performance.now()};
         }
         window.js_rewriting_logs.push(JSON.stringify(log_read));
         return retVal;
