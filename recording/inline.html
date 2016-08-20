@@ -106,7 +106,9 @@ if ( __wrappers_are_defined__ == undefined ) {
     var _random = Math.random;
     Math.random = function(){
         if ( log_vals[nd_pointer][0] != "Math.random" ) {
-            throw "Math.random called when next nondetermistic function expected is: " + log_vals[nd_pointer][0];
+            console.log("Math.random called when next nondetermistic function expected is: " + log_vals[nd_pointer][0]);
+            // since math.random is 'random', just return a new random value!
+            return _random();
         }
         var retVal = log_vals[nd_pointer][1];
         nd_pointer++;
