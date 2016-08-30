@@ -23,11 +23,13 @@ if ( len(sys.argv) > 6 ):
     start_wall_clock = log_out.split("-,-")[0]
     avg_date_diff = log_out.split("-,-")[1]
     log = log_out.split("-,-")[2]
+    log_err = log_err.strip("\n")
     event_order = log_err.strip("\n").split("----")[0]
     dom_event_order = log_err.strip("\n").split("----")[1]
+    xhr_event_order = log_err.strip("\n").split("----")[2]
 
 # make string containing ast info to add
-ast_string = "if ( __wrappers_are_defined__ == undefined ) {\nvar stopping_ast_id = " + ast_id + ";\nvar stopping_ast_count = " + ast_count + ";\nvar new_ast = JSON.parse('"+ new_ast_string + "');\nvar ordered_events = " + event_order + ";\nvar dom_ordered_events = " + dom_event_order + ";\nwindow.upper_wall_clock = " + str(start_wall_clock) + ";\nwindow.lower_wall_clock = 0;\nwindow.avg_date_diff = " + avg_date_diff + ";\n}\n"
+ast_string = "if ( __wrappers_are_defined__ == undefined ) {\nvar stopping_ast_id = " + ast_id + ";\nvar stopping_ast_count = " + ast_count + ";\nvar new_ast = JSON.parse('"+ new_ast_string + "');\nvar ordered_events = " + event_order + ";\nvar dom_ordered_events = " + dom_event_order + ";\nvar xhr_ordered_events = " + xhr_event_order + ";\nwindow.upper_wall_clock = " + str(start_wall_clock) + ";\nwindow.lower_wall_clock = 0;\nwindow.avg_date_diff = " + avg_date_diff + ";\n}\n"
 
 # temp folder to store rewritten protobufs
 os.system("rm -rf rewritten")
