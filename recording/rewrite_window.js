@@ -243,25 +243,25 @@ function enter(node, p){
     }
   }
   // the "proxied" hack is to avoid recursion
-  if (node.type === 'NewExpression' && node.proxied == null) {
-    newexpression = {"type": node.type, "callee": node.callee, "arguments":node.arguments, "proxied":true};
-    node.type = "CallExpression";
-    node.callee = {"type": "Identifier", "name": "makeProxy" };
-    node.arguments = [newexpression];
-  }
+  //if (node.type === 'NewExpression' && node.proxied == null) {
+  //  newexpression = {"type": node.type, "callee": node.callee, "arguments":node.arguments, "proxied":true};
+  //  node.type = "CallExpression";
+  //  node.callee = {"type": "Identifier", "name": "makeProxy" };
+  //  node.arguments = [newexpression];
+  //}
 
-  // the "proxied" hack is to avoid recursion
-  if (node.type === 'ObjectExpression' && node.proxied == null) {
-   for (var i = 0; i < node.properties.length; i++){
-      if (isObj(node.properties[i].value)) {
-        currentAssignment.push(node.properties[i].value);
-      }
-    }
-    objexpression = {"type": node.type, "properties": node.properties, "proxied":true};
-    node.type = "CallExpression";
-    node.callee = {"type": "Identifier", "name": "makeProxy" };
-    node.arguments = [objexpression];
-  }
+  //// the "proxied" hack is to avoid recursion
+  //if (node.type === 'ObjectExpression' && node.proxied == null) {
+  // for (var i = 0; i < node.properties.length; i++){
+  //    if (isObj(node.properties[i].value)) {
+  //      currentAssignment.push(node.properties[i].value);
+  //    }
+  //  }
+  //  objexpression = {"type": node.type, "properties": node.properties, "proxied":true};
+  //  node.type = "CallExpression";
+  //  node.callee = {"type": "Identifier", "name": "makeProxy" };
+  //  node.arguments = [objexpression];
+  //}
 }
 
 function isObj(node) {
