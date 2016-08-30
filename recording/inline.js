@@ -1,6 +1,4 @@
 if ( __wrappers_are_defined__ == undefined ) {
-    var debugger_env = {console:console, Math: Math, window:window};
-
     // keys are ast nodes (as strings), values are arrays [ast_unique_id, count]
     var asts_intercepted = {};
     var ast_unique_id_counter = 0;
@@ -58,6 +56,21 @@ if ( __wrappers_are_defined__ == undefined ) {
                     console.log("No more dom events to fire!");
                 }
             }
+            if ( event.data == "xhr" ) {
+                if ( xhr_ordered_events.length > 0 ) {
+                    // fire next event and remove it from list
+                    curr_xhr_log = xhr_ordered_events[0];
+                    if ( curr_xhr_log['id'] in curr_xhr_list ) {
+                        var this_obj = {'readyState': curr_xhr_log['State'], 'response': curr_xhr_log['Response'], 'status': curr_xhr_log['Status']};
+                        curr_xhr_list[curr_xhr_log['id']].call(this_obj);
+                        xhr_ordered_events.splice(0,1);
+                    } else {
+                        console.log("Next XHR to fire hasn't been registered by page yet!");
+                    }
+                } else {
+                    console.log("No more xhr events to fire!");
+                }
+            }
         }
     }, false);
 
@@ -65,7 +78,7 @@ if ( __wrappers_are_defined__ == undefined ) {
     // Note that we are doing this because of a bug in Firefox version 46:
     // Firefox allows events to fire (not just get added to the event queue) when paused with an F12-style debugger
     function create_controller() {
-        var control_content = "<button id='replay_button' type='button'>Replay Next Timer Event</button><button id='dom_replay_button' type='button'>Replay Next DOM Event</button><script>function notify_top() {window.opener.postMessage('timer', '*');}var but = document.getElementById('replay_button');but.addEventListener('click', notify_top, false);function notify_top_dom() {window.opener.postMessage('dom', '*');}var but_dom = document.getElementById('dom_replay_button');but_dom.addEventListener('click', notify_top_dom, false);<\/script>";
+        var control_content = "<button id='replay_button' type='button'>Replay Next Timer Event</button><button id='dom_replay_button' type='button'>Replay Next DOM Event</button><button id='xhr_replay_button' type='button'>Replay Next XHR Event</button><script>function notify_top() {window.opener.postMessage('timer', '*');}var but = document.getElementById('replay_button');but.addEventListener('click', notify_top, false);function notify_top_dom() {window.opener.postMessage('dom', '*');}function notify_top_xhr() {window.opener.postMessage('xhr', '*');}var but_dom = document.getElementById('dom_replay_button');but_dom.addEventListener('click', notify_top_dom, false);var but_xhr = document.getElementById('xhr_replay_button');but_xhr.addEventListener('click', notify_top_xhr, false);<\/script>";
         var windowObjectReference;
         var strWindowFeatures = "height=200,width=200"; // making this empty string will make the window be a tab!
         windowObjectReference = window.open("", "Replay", "");
@@ -116,6 +129,25 @@ if ( __wrappers_are_defined__ == undefined ) {
         nd_pointer++;
         return retVal;
     };
+
+    // xhr id counter
+    var xhr_ids = 0;
+
+    var _xhr = window.XMLHttpRequest;
+    window.XMLHttpRequest = function(){
+        var retVal;
+        retVal = new _xhr();
+        retVal._logid = xhr_ids;
+        xhr_ids += 1;
+        retVal.send = function (data) {
+            var retVal;
+            curr_xhr_list[this._logid] = this.onreadystatechange;
+        };
+        return retVal;
+    }
+
+    // list of xhrs that have been sent out
+    curr_xhr_list = {};
 
     // function that returns estimate of 'current wall clock time' using log
     function curr_wall_clock_time() {
@@ -212,6 +244,8 @@ if ( __wrappers_are_defined__ == undefined ) {
         unique_timeout_ids+= 1;
         return get_timeout_return(ret_id);
     }
+
+    var debugger_env = {console:console, Math:Math, window:window, XMLHttpRequest:XMLHttpRequest};
 
     // Source code for ESPRIMA
     (function (root, factory) {
