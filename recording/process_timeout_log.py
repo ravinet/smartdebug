@@ -13,6 +13,8 @@ ordered_events = []
 # tuples ("EventType", "Event"(e.g., click), EventInit)
 ordered_dom_events = []
 
+ordered_xhr_events = []
+
 # list of nondeterminism calls (date, random)...list of tuples (type, return_val)
 return_list = []
 
@@ -45,6 +47,8 @@ with open(log) as file1:
                     start_wall_clock_time = curr_time
             if ( curr_entry.get('Type') == "DOMEvent" ):
                 ordered_dom_events.append(curr_entry)
+            if ( curr_entry.get('Type') == "XHR" ):
+                ordered_xhr_events.append(curr_entry)
 
 # go through ordered events and output in form that we can add to recorded pages
 event_out = []
@@ -52,5 +56,9 @@ for e in ordered_events:
     curr_log = {'UniqueID': e[0], 'TimeoutID': e[1], 'Time': e[2]}
     event_out.append(curr_log)
 
-print str(start_wall_clock_time) + "-,-" + str(numpy.average(date_diffs)) + "-,-" + json.dumps(return_list)
-print >> sys.stderr, json.dumps(event_out) + "----" + json.dumps(ordered_dom_events)
+date_diff_avg = 10
+if ( len(date_diffs) != 0 ):
+    date_diff_avg = numpy.average(date_diffs)
+
+print str(start_wall_clock_time) + "-,-" + str(date_diff_avg) + "-,-" + json.dumps(return_list)
+print >> sys.stderr, json.dumps(event_out) + "----" + json.dumps(ordered_dom_events) + "----" + json.dumps(ordered_xhr_events)
