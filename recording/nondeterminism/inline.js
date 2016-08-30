@@ -178,16 +178,12 @@ if ( __wrappers_are_defined__ != undefined ) {
         var curr_id = xhr_ids;
         retVal.addEventListener("readystatechange", function() {
             states = {0: 'UNSENT', 1: 'OPENED', 2: 'HEADERS_RECEIVED', 3: 'LOADING', 4: 'DONE'};
-            state_log = {'Type': 'XHR', 'State': retVal.readyState, 'Text': states[retVal.readyState], 'Time': performance.now(), 'id': curr_id};
-            window.js_rewriting_logs.push(JSON.stringify(state_log));
-            if ( retVal.readyState == 4 ) {
-                response_log = {'Type': 'XHR', 'Status': retVal.status, 'StatusText': retVal.statusText, 'Headers': JSON.stringify(retVal.getAllResponseHeaders()), 'Response': retVal.responseText, 'id': curr_id, 'Time': performance.now()};
-                window.js_rewriting_logs.push(JSON.stringify(response_log));
-            }
+            response_log = {'Type': 'XHR', 'State': retVal.readyState, 'StateText': states[retVal.readyState], 'Status': retVal.status, 'StatusText': retVal.statusText, 'Headers': JSON.stringify(retVal.getAllResponseHeaders()), 'Response': retVal.responseText, 'id': curr_id, 'Time': performance.now()};
+            window.js_rewriting_logs.push(JSON.stringify(response_log));
         });
         xhr_ids += 1;
         return retVal;
-    };
+    }
 
     // list of DOM events that we care about (further broken down into 'Mouse' and 'Keyboard'
     var dom_event_list = ["click", "contextmenu", "dblclick", "mouseenter", "mousedown", "mouseleave", "mousemove", "mouseout", "mouseover", "mouseup", "keydown", "keypress", "keyup"];
@@ -778,10 +774,12 @@ if ( __wrappers_are_defined__ != undefined ) {
     var listids = function(obj, arr, start="") {
         for(var i in obj) {
             curr = start + "." + i
-            if(obj[i].hasOwnProperty('_id')){
-                arr.push([curr, obj[i]._id])
+            if ( obj[i] != null ) {
+                if(obj[i].hasOwnProperty('_id')){
+                    arr.push([curr, obj[i]._id])
+                }
+                listids(obj[i], arr, curr);
             }
-            listids(obj[i], arr, curr);
         }
     };
 
@@ -847,7 +845,7 @@ if ( __wrappers_are_defined__ != undefined ) {
     }
 
     // set debugger_env here so all necessary functions (e.g., window_handler) are already defined)
-    var debugger_env = {console:console, Math: Math, window:window, _window:_window, window_handler: window_handler, Proxy: window.Proxy};
+    var debugger_env = {console:console, Math: Math, window:window, XMLHttpRequest: window.XMLHttpRequest, _window:_window, window_handler: window_handler, Proxy: window.Proxy, makeProxy: window.makeProxy};
 
     // Source code for ESPRIMA
     (function (root, factory) {
