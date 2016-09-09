@@ -121,7 +121,7 @@ if ( __wrappers_are_defined__ == undefined ) {
         if ( log_vals[nd_pointer][0] != "Math.random" ) {
             throw "Math.random called when next nondetermistic function expected is: " + log_vals[nd_pointer][0];
         }
-        if ( len(log_vals) <= nd_pointer ) { // run out of logs!
+        if ( log_vals.length <= nd_pointer ) { // run out of logs!
             // since math.random is 'random', just return a new random value!
             return _random();
         }
@@ -168,7 +168,7 @@ if ( __wrappers_are_defined__ == undefined ) {
             if ( log_vals[nd_pointer][0] != "new window.Date" ) {
                 throw "new window.Date called when next nondetermistic function expected is: " + log_vals[nd_pointer][0];
             }
-            if ( len(log_vals) <= nd_pointer ) { // run out of logs!
+            if ( log_vals.length <= nd_pointer ) { // run out of logs!
                 // return curr_wall_clock + avg_date_diff
                 var ret = (curr_wall_clock_time)*1000 + avg_date_diff;
                 lower_wall_clock = ret;
@@ -181,7 +181,7 @@ if ( __wrappers_are_defined__ == undefined ) {
             if ( log_vals[nd_pointer][0] != "window.Date" ) {
                 throw "window.Date called when next nondetermistic function expected is: " + log_vals[nd_pointer][0];
             }
-            if ( len(log_vals) <= nd_pointer ) { // run out of logs!
+            if ( log_vals.length <= nd_pointer ) { // run out of logs!
                 // return curr_wall_clock + avg_date_diff
                 var ret = (curr_wall_clock_time)*1000 + avg_date_diff;
                 lower_wall_clock = ret;
