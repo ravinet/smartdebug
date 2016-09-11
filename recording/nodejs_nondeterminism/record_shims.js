@@ -8,6 +8,8 @@ delete Array.from;
 global.unique_timeout_ids = 0;
 var unique_timeout_id_mappings = {};
 
+global.handler_ids = 0;
+
 // shim for setTimeout
 _settimeout = global.setTimeout;
 global.setTimeout = function (func, delay) {
@@ -50,7 +52,9 @@ _eventemitteron = events.EventEmitter.prototype.on;
 events.EventEmitter.prototype.on = function (type, listener) {
     var stack = new Error().stack.split("\n")[1].split(":");
     var line = stack[stack.length - 2];
-    var wrapper_func = function() {var hrTime = process.hrtime();var log_event = {'Function': 'EventEmitter.on', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000};shim_logs.push(JSON.stringify(log_event));listener();};
+    var curr_id = global.handler_ids;
+    global.handler_ids += 1;
+    var wrapper_func = function() {var hrTime = process.hrtime();var log_event = {'Function': 'EventEmitter.on', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'ID': curr_id};shim_logs.push(JSON.stringify(log_event));listener();};
     var retVal = _eventemitteron.call(this, type, wrapper_func);
     return retVal;
 };
@@ -90,9 +94,11 @@ events.EventEmitter.prototype.emit = function (type) {
     var stack = new Error().stack.split("\n")[1].split(":");
     var line = stack[stack.length - 2];
     var hrTime = process.hrtime();
-    var log_event = {'Function': 'EventEmitter.emit', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000};
+    var log_event = {'Function': 'EventEmitter.emit', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'EmitStatus': 'Before'};
     shim_logs.push(JSON.stringify(log_event));
     var retVal = _eventemitteremit.call(this, type);
+    var log_event_after = {'Function': 'EventEmitter.emit', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'EmitStatus': 'After'};
+    shim_logs.push(JSON.stringify(log_event_after));
 }
 
 _orig_date_now = Date.now;
