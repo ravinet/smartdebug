@@ -1,6 +1,16 @@
 // counter for nondeterminism replay
 global.nd_pointer = 0;
 
+global.handler_ids = 0;
+// keys are ids and vals are handlers
+emit_handlers = {};
+
+var events = require('events');
+var from = require('array.from');
+const util = require('util');
+delete Array.from;
+
+
 // function that returns estimate of 'current wall clock time' using log
 //function curr_wall_clock_time() {
 //    // current doesn't take arguments, but uses the global lower/upper bounds and modifies them accordingly
@@ -62,4 +72,44 @@ Math.random = function(){
     var retVal = log_vals[nd_pointer][1];
     nd_pointer++;
     return retVal;
+};
+
+// shim for EventEmitter.emit()
+// this goes through log and fires all handlers in between next emit 'before' and 'after'
+// don't call native emit()
+_eventemitteremit = events.EventEmitter.prototype.emit;
+events.EventEmitter.prototype.emit = function (type) {
+    // emit_ordered_events
+    var before = -1;
+    var after = -1;
+    for ( var i = 0; i < global.emit_ordered_events.length; i++ ) {
+        if ( global.emit_ordered_events[i]['Function'] == 'EventEmitter.emit' ) {
+            if ( global.emit_ordered_events[i]['EmitStatus'] == 'Before' ) {
+                before = i;
+            }
+            if ( global.emit_ordered_events[i]['EmitStatus'] == 'After' ) {
+                after = i;
+            }
+        }
+        if ( before != -1 && after != -1) { // fire handlers!
+            if ( 'ID' in global.emit_ordered_events[i] ) {
+                var id = global.emit_ordered_events[i]['ID'];
+                if ( id in emit_handlers ) {
+                    emit_handlers[i]();
+                }
+            }
+        }
+    }
+
+    // remove this emit() event from logs
+    global.emit_ordered_events.splice(before, after-before+1);
+}
+
+// shim for EventEmitter.on()
+// add handler to list of handlers that we can fire
+_eventemitteron = events.EventEmitter.prototype.on;
+events.EventEmitter.prototype.on = function (type, listener) {
+    var curr_id = global.handler_ids;
+    global.handler_ids += 1;
+    emit_handlers[curr_id] = listener;
 };
