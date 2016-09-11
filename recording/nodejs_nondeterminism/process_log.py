@@ -9,12 +9,7 @@ nondeterminism_types = ['new window.Date', 'window.Date', 'Math.random']
 # list of events to fire (in order)..entries are tuples (uniqueid, timeoutid, time)
 #TODO: may want to change this to be time from start (rather than time)
 ordered_events = []
-
-# tuples ("EventType", "Event"(e.g., click), EventInit)
-ordered_dom_events = []
-
-ordered_xhr_events = []
-
+emit_events = []
 # list of nondeterminism calls (date, random)...list of tuples (type, return_val)
 return_list = []
 
@@ -45,10 +40,10 @@ with open(log) as file1:
                 curr_time = float(curr_entry.get('Time'))
                 if ( curr_time < start_wall_clock_time or start_wall_clock_time == 0 ):
                     start_wall_clock_time = curr_time
-            if ( curr_entry.get('Type') == "DOMEvent" ):
-                ordered_dom_events.append(curr_entry)
-            if ( curr_entry.get('Type') == "XHR" ):
-                ordered_xhr_events.append(curr_entry)
+            if ( 'ID' in curr_entry ): # this is a handler firing!
+                emit_events.append(curr_entry)
+            if ( curr_entry.get('Function') == "EventEmitter.emit" ): # before/after an emit
+                emit_events.append(curr_entry)
         except:
             continue
 
@@ -63,4 +58,4 @@ if ( len(date_diffs) != 0 ):
     date_diff_avg = numpy.average(date_diffs)
 
 print str(start_wall_clock_time) + "-,-" + str(date_diff_avg) + "-,-" + json.dumps(return_list)
-print >> sys.stderr, json.dumps(event_out) + "----" + json.dumps(ordered_dom_events) + "----" + json.dumps(ordered_xhr_events)
+print >> sys.stderr, json.dumps(event_out) + "----" + json.dumps(ordered_events) + "----" + json.dumps(emit_events)
