@@ -40,7 +40,7 @@ with open(log) as file1:
                 curr_time = float(curr_entry.get('Time'))
                 if ( curr_time < start_wall_clock_time or start_wall_clock_time == 0 ):
                     start_wall_clock_time = curr_time
-            if ( 'ID' in curr_entry ): # this is a handler firing!
+            if ( 'Event_ID' in curr_entry ): # this is a handler firing!
                 emit_events.append(curr_entry)
             if ( curr_entry.get('Function') == "EventEmitter.emit" ): # before/after an emit
                 emit_events.append(curr_entry)

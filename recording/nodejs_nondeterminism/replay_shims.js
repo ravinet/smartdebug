@@ -92,8 +92,8 @@ events.EventEmitter.prototype.emit = function (type) {
             }
         }
         if ( before != -1 && after != -1) { // fire handlers!
-            if ( 'ID' in global.emit_ordered_events[i] ) {
-                var id = global.emit_ordered_events[i]['ID'];
+            if ( 'Event_ID' in global.emit_ordered_events[i] ) {
+                var id = global.emit_ordered_events[i]['Event_ID'];
                 if ( id in emit_handlers ) {
                     emit_handlers[i]();
                 }
