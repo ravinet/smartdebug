@@ -5,6 +5,9 @@ var from = require('array.from');
 const util = require('util');
 delete Array.from;
 
+global.http_events = ['response', 'end', 'finish', '_socketEnd', 'connect', 'free', 'close', 'agentRemove', 'socket', 'drain', 'data', 'prefinish', 'SIGWINCH'];
+global.http_emits = ['socket', 'prefinish', 'resume', 'lookup', 'finish', 'connect', 'data', 'readable', 'end', 'close'];
+
 global.unique_timeout_ids = 0;
 var unique_timeout_id_mappings = {};
 
@@ -54,8 +57,12 @@ events.EventEmitter.prototype.on = function (type, listener) {
     var line = stack[stack.length - 2];
     var curr_id = global.handler_ids;
     global.handler_ids += 1;
-    var wrapper_func = function() {var hrTime = process.hrtime();var log_event = {'Function': 'EventEmitter.on', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'ID': curr_id};shim_logs.push(JSON.stringify(log_event));listener();};
-    var retVal = _eventemitteron.call(this, type, wrapper_func);
+    if ( global.http_events.indexOf(type) != -1 ) { // http event we care about, handle appropriately! log info to fire again in replay
+    }
+    var args = from(arguments);
+    var wrapper_func = function() {var hrTime = process.hrtime();var log_event = {'Function': 'EventEmitter.once', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000};shim_logs.push(JSON.stringify(log_event));var args = from(arguments);listener.apply(this, args);};
+    args1 = [type, wrapper_func];
+    var retVal = _eventemitteron.apply(this, args1);
     return retVal;
 };
 
@@ -64,8 +71,9 @@ _eventemitteronce = events.EventEmitter.prototype.once;
 events.EventEmitter.prototype.once = function (type, listener) {
     var stack = new Error().stack.split("\n")[1].split(":");
     var line = stack[stack.length - 2];
-    var wrapper_func = function() {var hrTime = process.hrtime();var log_event = {'Function': 'EventEmitter.once', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000};shim_logs.push(JSON.stringify(log_event));listener();};
-    var retVal = _eventemitteronce.call(this, type, wrapper_func);
+    var wrapper_func = function() {var hrTime = process.hrtime();var log_event = {'Function': 'EventEmitter.once', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000};shim_logs.push(JSON.stringify(log_event));var args = from(arguments);listener.apply(this, args);};
+    var args = [type, wrapper_func];
+    var retVal = _eventemitteronce.apply(this, args);
     return retVal;
 };
 
@@ -74,8 +82,9 @@ _eventemitterprepend = events.EventEmitter.prototype.prependListener;
 events.EventEmitter.prototype.prependListener = function (type, listener) {
     var stack = new Error().stack.split("\n")[1].split(":");
     var line = stack[stack.length - 2];
-    var wrapper_func = function() {var hrTime = process.hrtime();var log_event = {'Function': 'EventEmitter.prependListener', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000};shim_logs.push(JSON.stringify(log_event));listener();};
-    var retVal = _eventemitterprepend.call(this, type, wrapper_func);
+    var wrapper_func = function() {var hrTime = process.hrtime();var log_event = {'Function': 'EventEmitter.once', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000};shim_logs.push(JSON.stringify(log_event));var args = from(arguments);listener.apply(this, args);};
+    var args = [type, wrapper_func];
+    var retVal = _eventemitterprepend.apply(this, args);
     return retVal;
 };
 
@@ -94,11 +103,16 @@ events.EventEmitter.prototype.emit = function (type) {
     var stack = new Error().stack.split("\n")[1].split(":");
     var line = stack[stack.length - 2];
     var hrTime = process.hrtime();
+    var retVal;
     var log_event = {'Function': 'EventEmitter.emit', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'EmitStatus': 'Before'};
     shim_logs.push(JSON.stringify(log_event));
-    var retVal = _eventemitteremit.call(this, type);
+    if ( global.http_emits.indexOf(type) != -1 ) { // I don't think we have to do anything for these types of emits?
+    }
+    var args = from(arguments);
+    var retVal = _eventemitteremit.apply(this, args);
     var log_event_after = {'Function': 'EventEmitter.emit', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'EmitStatus': 'After'};
     shim_logs.push(JSON.stringify(log_event_after));
+    return retVal;
 }
 
 _orig_date_now = Date.now;
