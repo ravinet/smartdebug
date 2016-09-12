@@ -2,6 +2,7 @@ global.shim_logs = []
 
 var events = require('events');
 var from = require('array.from');
+var http = require('http');
 const util = require('util');
 delete Array.from;
 
