@@ -1,5 +1,157 @@
 if ( __wrappers_are_defined__ != undefined ) {
 } else {
+(function(){
+    var nextUniqueId = 0;
+
+    //numEntries: The number of clocks in the vector.
+    //localPos:   The local process' position in the vector.
+    //name:       [Optional] A unique name for this clock. The
+    //            name must actually be unique, so that we can
+    //            use names to break ties in VectorClock::generateTotalOrder().    
+    function VectorClock(numEntries, localPos, name){
+        this.clock = [];
+        this.name = name || nextUniqueId++;
+        this.localPos = localPos;
+        for(var i = 0; i < numEntries; i++){
+            this.clock.push(0);
+        }
+    }
+
+    //Call this method when a process is starting to
+    //handle an internal event. 
+    VectorClock.prototype.increment = function(){
+        this.clock[this.localPos]++;
+    };
+
+    //Returns whether this vector clock is causally ordered
+    //before another vector clock.
+    VectorClock.prototype.lessThan = function(otherClock){
+        if(this.clock.length != otherClock.clock.length){
+            throw "VectorClock::lessThan(): ERROR: The two clocks have different lengths.";
+        }
+        var atLeastOneSmaller = false;
+        for(var i = 0; i < this.clock.length; i++){
+            var mine = this.clock[i];
+            var theirs = otherClock.clock[i];
+            if(mine > theirs){
+                return false;
+            }
+            if(mine < theirs){
+                atLeastOneSmaller = true;
+            }
+        }
+        return atLeastOneSmaller;
+    };
+
+    //Returns whether two clocks happened at the same time
+    //with respect to logical time.
+    VectorClock.prototype.isConcurrent =  function(otherClock){
+        return (!this.lessThan(otherClock)) &&
+               (!otherClock.lessThan(this));
+    };
+
+    //Returns whether this clock happened before or concurrently
+    //with another clock.
+    VectorClock.prototype.lessThanOrEqual = function(otherClock){
+        return this.lessThan(otherClock) || this.isConcurrent(otherClock);
+    };
+
+    //Used to update this clock in response to the reception
+    //of another clock in a message.
+    VectorClock.prototype.update = function(clockFromMsg){
+        if(this.clock.length != clockFromMsg.clock.length){
+            throw "VectorClock::lessThan(): ERROR: The two clocks have different lengths.";
+        }
+        for(var i = 0; i < this.clock.length; i++){
+            if(i == this.localPos){
+                this.clock[i]++;
+            }else{
+                this.clock[i] = Math.max(this.clock[i], clockFromMsg.clock[i]);
+            }
+        }
+        // write the vector clock to the client cookie (so we don't have to do this everywhere!)
+        //this.writeToCookie();
+    };
+
+    //Returns a string with the individual clocks separated
+    //by colons, e.g., "4:23:0:1".
+    VectorClock.prototype.toString = function(){
+        var arr = [];
+        for(var i = 0; i < this.clock.length; i++){
+            arr.push(this.clock[i].toString());
+        }
+        return arr.join(":");
+    };
+
+    //Write a VectorClock to a cookie, using "vector-clock"
+    //as the cookie key unless another key is explicitly
+    //provided.
+    VectorClock.prototype.writeToCookie = function(key){
+        key = key || "vector-clock";
+        document.cookie = key + "=" + this.toString();
+    };
+
+    //Read the local cookies and extract the vector clock,
+    //looking for the clock inside the cookie key "vector-clock"
+    //unless a different key is explicitly provided. The
+    //localPos argument is required and indicates the position
+    //in the vector which the new VectorClock should associate
+    //with the local process.
+    VectorClock.extractFromCookie = function(localPos, key){
+        if(!localPos){
+            throw "VectorClock::extractFromCookie(): ERROR: Must specify a localPos.";
+        }
+
+        var cookies = document.cookie.split(";");
+        key = key || "vector-clock";
+        for(var i = 0; i < cookies.length; i++){
+            var tokens = cookies[i].split("=");
+            if(tokens[0] == key || tokens[0] == " vector-clock"){
+                var val = tokens[1];
+                tokens = val.split(":");
+                var newClock = new VectorClock();
+                for(var i = 0; i < tokens.length; i++){
+                    newClock.clock[i] = parseInt(tokens[i]);
+                }
+                newClock.localPos = localPos;
+                return newClock;
+            }
+        }
+        return null;
+    };
+
+    //Sorts the given log of {clock: VectorClockInstance, data: whatever}
+    //objects IN PLACE, i.e., the function does not return a new array,
+    //but instead sorts the array passed in as a parameter. Concurrent
+    //clocks are ordered using their .name property, so it's important
+    //for those properties to be unique!
+    VectorClock.generateTotalOrder = function(log){
+        var sortFunc = function(logEntry0, logEntry1){
+            var c0 = logEntry0.clock;
+            var c1 = logEntry1.clock;
+            if(c0.lessThan(c1)){
+                return -1;
+            }else if(c1.lessThan(c0)){
+                return 1;
+            }else{
+                if(c0.name < c1.name){
+                    return -1;
+                }else if(c0.name > c1.name){
+                    return 1;
+                }else{
+                    throw "VectorClock::generateTotalOrder: ERROR: Could not break tie . . . are clock names non-unique?";
+                }
+            }
+        };
+        log.sort(sortFunc);
+    };
+
+    window.VectorClock = VectorClock;
+})();
+    // create vector clock for client (has entries for client and server)
+    var client_clock = new VectorClock(2,0);
+    client_clock.writeToCookie();
+
     // keys are ast nodes (as strings), values are arrays [ast_unique_id, count]
     var asts_intercepted = {};
     var ast_unique_id_counter = 0;
@@ -105,10 +257,10 @@ if ( __wrappers_are_defined__ != undefined ) {
         var stack = new Error().stack.split("\n")[1].split(":");
         var line = stack[stack.length - 2];
         var curr_id = unique_timeout_ids;
-        var wrapper_func = function() {var log_timeout = {'Function': 'setTimeout', 'Script': caller, 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': window.performance.now()};window.js_rewriting_logs.push(JSON.stringify(log_timeout));func();};
+        var wrapper_func = function() {client_clock.increment();client_clock.writeToCookie();var log_timeout = {'Function': 'setTimeout', 'Script': caller, 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': window.performance.now(), 'Vector_Clock':client_clock.toString()};window.js_rewriting_logs.push(JSON.stringify(log_timeout));func();};
         if ( typeof(func) == "string" ) {
             var make_func = new Function(func);
-            var wrapper_func = function() {var log_timeout = {'Function': 'setTimeout', 'Script': caller, 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': window.performance.now()};window.js_rewriting_logs.push(JSON.stringify(log_timeout));make_func();};
+            var wrapper_func = function() {client_clock.increment();client_clock.writeToCookie();var log_timeout = {'Function': 'setTimeout', 'Script': caller, 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': window.performance.now(), 'Vector_Clock':client_clock.toString()};window.js_rewriting_logs.push(JSON.stringify(log_timeout));make_func();};
         }
         var retVal = _settimeout(wrapper_func, delay);
         unique_timeout_id_mappings[curr_id] = retVal;
@@ -122,10 +274,10 @@ if ( __wrappers_are_defined__ != undefined ) {
         var stack = new Error().stack.split("\n")[1].split(":");
         var line = stack[stack.length - 2];
         var curr_id = unique_timeout_ids;
-        var wrapper_func = function() {var log_timeout = {'Function': 'setInterval', 'Script': caller, 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': window.performance.now()};window.js_rewriting_logs.push(JSON.stringify(log_timeout));func();};
+        var wrapper_func = function() {client_clock.increment();client_clock.writeToCookie();var log_timeout = {'Function': 'setInterval', 'Script': caller, 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': window.performance.now(), 'Vector_Clock':client_clock.toString()};window.js_rewriting_logs.push(JSON.stringify(log_timeout));func();};
         if ( typeof(func) == "string" ) {
             var make_func = new Function(func);
-            var wrapper_func = function() {var log_timeout = {'Function': 'setInterval', 'Script': caller, 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': window.performance.now()};window.js_rewriting_logs.push(JSON.stringify(log_timeout));make_func();};
+            var wrapper_func = function() {client_clock.increment();client_clock.writeToCookie();var log_timeout = {'Function': 'setInterval', 'Script': caller, 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': window.performance.now(), 'Vector_Clock':client_clock.toString()};window.js_rewriting_logs.push(JSON.stringify(log_timeout));make_func();};
         }
         var retVal = _setinterval(wrapper_func, delay);
         unique_timeout_id_mappings[curr_id] = retVal;
@@ -177,8 +329,10 @@ if ( __wrappers_are_defined__ != undefined ) {
         retVal = new _xhr();
         var curr_id = xhr_ids;
         retVal.addEventListener("readystatechange", function() {
+            client_clock.increment();
+            client_clock.writeToCookie();
             states = {0: 'UNSENT', 1: 'OPENED', 2: 'HEADERS_RECEIVED', 3: 'LOADING', 4: 'DONE'};
-            response_log = {'Type': 'XHR', 'State': retVal.readyState, 'StateText': states[retVal.readyState], 'Status': retVal.status, 'StatusText': retVal.statusText, 'Headers': JSON.stringify(retVal.getAllResponseHeaders()), 'Response': retVal.responseText, 'id': curr_id, 'Time': performance.now()};
+            response_log = {'Type': 'XHR', 'State': retVal.readyState, 'StateText': states[retVal.readyState], 'Status': retVal.status, 'StatusText': retVal.statusText, 'Headers': JSON.stringify(retVal.getAllResponseHeaders()), 'Response': retVal.responseText, 'id': curr_id, 'Time': performance.now(), 'Vector_Clock':client_clock.toString()};
             window.js_rewriting_logs.push(JSON.stringify(response_log));
         });
         xhr_ids += 1;
@@ -209,11 +363,15 @@ if ( __wrappers_are_defined__ != undefined ) {
     log_handler = function (eve) {
         if ( eve.target != document.children[0] ) { // don't log events that only exist because we have handlers on window!
             if ( dom_mouse_events.indexOf(eve.type) != -1 ) {
-                log_click = {"Type": "DOMEvent", "EventType": "MouseEvent", "Event": eve.type, "Target": get_just_child_path(eve.target), "EventInit": {"altKey": eve.altKey, "button": eve.button, "buttons": eve.buttons, "clientX": eve.clientX, "clientY": eve.clientY, "ctrlKey": eve.ctrlKey, "metaKey": eve.metaKey, "movementX": eve.movementX, "movementY": eve.movementY, "offsetX": eve.offsetX, "offsetY": eve.offsetY, "pageX": eve.pageX, "pageY": eve.pageY, "region": eve.region, "screenX": eve.screenX, "screenY": eve.screenY, "shiftKey": eve.shiftKey, "which": eve.which, "mozPressure": eve.mozPressure, "mozInputSource": eve.mozInputSource, "webkitForce": eve.webkitForce, "x": eve.x, "y": eve.y}};
+                client_clock.increment();
+                client_clock.writeToCookie();
+                log_click = {"Type": "DOMEvent", "EventType": "MouseEvent", "Event": eve.type, "Target": get_just_child_path(eve.target), "EventInit": {"altKey": eve.altKey, "button": eve.button, "buttons": eve.buttons, "clientX": eve.clientX, "clientY": eve.clientY, "ctrlKey": eve.ctrlKey, "metaKey": eve.metaKey, "movementX": eve.movementX, "movementY": eve.movementY, "offsetX": eve.offsetX, "offsetY": eve.offsetY, "pageX": eve.pageX, "pageY": eve.pageY, "region": eve.region, "screenX": eve.screenX, "screenY": eve.screenY, "shiftKey": eve.shiftKey, "which": eve.which, "mozPressure": eve.mozPressure, "mozInputSource": eve.mozInputSource, "webkitForce": eve.webkitForce, "x": eve.x, "y": eve.y}, 'Vector_Clock':client_clock.toString()};
                 window.js_rewriting_logs.push(JSON.stringify(log_click));
             }
             if ( dom_keyboard_events.indexOf(eve.type) != -1 ) {
-                log_keyboard = {"Type": "DomEvent", "EventType": "KeyboardEvent", "Event": eve.type, "Target": get_just_child_path(eve.target), "EventInit": {"altKey": eve.altKey, "code": eve.code, "ctrlKey": eve.ctrlKey, "isComposing": eve.isComposing, "key": eve.key, "keyIdentifier": eve.keyIdentifier, "keyLocation": eve.keyLocation, "locale": eve.locale, "location": eve.location, "metaKey": eve.metaKey, "repeat": eve.repeat, "shiftKey": eve.shiftKey}};
+                client_clock.increment();
+                client_clock.writeToCookie();
+                log_keyboard = {"Type": "DomEvent", "EventType": "KeyboardEvent", "Event": eve.type, "Target": get_just_child_path(eve.target), "EventInit": {"altKey": eve.altKey, "code": eve.code, "ctrlKey": eve.ctrlKey, "isComposing": eve.isComposing, "key": eve.key, "keyIdentifier": eve.keyIdentifier, "keyLocation": eve.keyLocation, "locale": eve.locale, "location": eve.location, "metaKey": eve.metaKey, "repeat": eve.repeat, "shiftKey": eve.shiftKey}, 'Vector_Clock':client_clock.toString()};
                 window.js_rewriting_logs.push(JSON.stringify(log_keyboard));
             }
         }
