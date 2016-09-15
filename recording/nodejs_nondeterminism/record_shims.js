@@ -6,20 +6,17 @@ var http = require('http');
 const util = require('util');
 delete Array.from;
 
-process.stdin.resume();
+//process.stdin.resume();
 
 // output logs prior to exiting
 function exitHandler(options, err) {
-    if (options.exit || options.cleanup){
+    if (options.exit){
         for (var i = 0; i < shim_logs.length; i++ ) {
             console.log(shim_logs[i]);
         }
         process.exit();
     }
 }
-
-//do something when app is closing
-process.on('exit', exitHandler.bind(null,{cleanup:true}));
 
 //catches ctrl+c event
 process.on('SIGINT', exitHandler.bind(null, {exit:true}));
@@ -166,7 +163,7 @@ process.on('SIGINT', exitHandler.bind(null, {exit:true}));
     global.VectorClock = VectorClock;
 })();
     // create vector clock for client (has entries for client and server)
-    var server_clock = new VectorClock(2,0);
+    global.server_clock = new VectorClock(2,0);
 
 global.http_events = ['response', 'end', 'finish', '_socketEnd', 'connect', 'free', 'close', 'agentRemove', 'socket', 'drain', 'data', 'prefinish', 'SIGWINCH'];
 global.http_emits = ['socket', 'prefinish', 'resume', 'lookup', 'finish', 'connect', 'data', 'readable', 'end', 'close'];
@@ -195,10 +192,10 @@ global.setTimeout = function (func, delay) {
     var stack = new Error().stack.split("\n")[1].split(":");
     var line = stack[stack.length - 2];
     var curr_id = unique_timeout_ids;
-    var wrapper_func = function() {server_clock.increment();var hrTime = process.hrtime();var log_timeout = {'Function': 'setTimeout', 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'Vector_Clock': server_clock.toString()};shim_logs.push(JSON.stringify(log_timeout));func();};
+    var wrapper_func = function() {global.server_clock.increment();var clock_string = global.server_clock.toString();var hrTime = process.hrtime();var log_timeout = {'Function': 'setTimeout', 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'Vector_Clock': clock_string};shim_logs.push(JSON.stringify(log_timeout));func();};
     if ( typeof(func) == "string" ) {
         var make_func = new Function(func);
-        var wrapper_func = function() {server_clock.increment();var log_timeout = {'Function': 'setTimeout', 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'Vector_Clock': server_clock.toString()};shim_logs.push(JSON.stringify(log_timeout));make_func();};
+        var wrapper_func = function() {global.server_clock.increment();var clock_string = global.server_clock.toString();var log_timeout = {'Function': 'setTimeout', 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'Vector_Clock': clock_string};shim_logs.push(JSON.stringify(log_timeout));make_func();};
     }
     var retVal = _settimeout(wrapper_func, delay);
     unique_timeout_id_mappings[curr_id] = retVal;
@@ -212,10 +209,10 @@ global.setInterval = function (func, delay) {
     var stack = new Error().stack.split("\n")[1].split(":");
     var line = stack[stack.length - 2];
     var curr_id = unique_timeout_ids;
-    var wrapper_func = function() {server_clock.increment();var hrTime = process.hrtime();var log_timeout = {'Function': 'setInterval', 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'Vector_Clock': server_clock.toString()};shim_logs.push(JSON.stringify(log_timeout));func();};
+    var wrapper_func = function() {global.server_clock.increment();var clock_string = global.server_clock.toString();var hrTime = process.hrtime();var log_timeout = {'Function': 'setInterval', 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'Vector_Clock': clock_string};shim_logs.push(JSON.stringify(log_timeout));func();};
     if ( typeof(func) == "string" ) {
         var make_func = new Function(func);
-        var wrapper_func = function() {server_clock.increment();var log_timeout = {'Function': 'setInterval', 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'Vector_Clock': server_clock.toString()};shim_logs.push(JSON.stringify(log_timeout));make_func();};
+        var wrapper_func = function() {global.server_clock.increment();var clock_string = global.server_clock.toString();var log_timeout = {'Function': 'setInterval', 'OrigLine': line, 'UniqueID': curr_id, 'TimeoutId': unique_timeout_id_mappings[curr_id], 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'Vector_Clock': clock_string};shim_logs.push(JSON.stringify(log_timeout));make_func();};
     }
     var retVal = _setinterval(wrapper_func, delay);
     unique_timeout_id_mappings[curr_id] = retVal;
@@ -233,7 +230,7 @@ events.EventEmitter.prototype.on = function (type, listener) {
     if ( global.http_events.indexOf(type) != -1 ) { // http event we care about, handle appropriately! log info to fire again in replay
     }
     var args = from(arguments);
-    var wrapper_func = function() {server_clock.increment();var keep_req = {};if ( this instanceof http.ClientRequest ) {for (var d in global.request_info ) {keep_req[global.request_info[d]] = this[global.request_info[d]];}}var keep_res = {};if ( this instanceof http.IncomingMessage ) {for (var d in global.response_info ) {keep_res[global.response_info[d]] = this[global.response_info[d]];}}var hrTime = process.hrtime();var log_event = {'Function': 'EventEmitter.on', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'ReqInfo': JSON.stringify(keep_req), 'ResInfo': JSON.stringify(keep_res), 'Vector_Clock': server_clock.toString()};shim_logs.push(JSON.stringify(log_event));var args = from(arguments);listener.apply(this, args);};
+    var wrapper_func = function() {global.server_clock.increment();var clock_string = global.server_clock.toString();var keep_req = {};if ( this instanceof http.ClientRequest ) {for (var d in global.request_info ) {keep_req[global.request_info[d]] = this[global.request_info[d]];}}var keep_res = {};if ( this instanceof http.IncomingMessage ) {for (var d in global.response_info ) {keep_res[global.response_info[d]] = this[global.response_info[d]];}}var hrTime = process.hrtime();var log_event = {'Function': 'EventEmitter.on', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'ReqInfo': JSON.stringify(keep_req), 'ResInfo': JSON.stringify(keep_res), 'Vector_Clock': clock_string};shim_logs.push(JSON.stringify(log_event));var args = from(arguments);listener.apply(this, args);};
     args1 = [type, wrapper_func];
     var retVal = _eventemitteron.apply(this, args1);
     return retVal;
@@ -246,7 +243,7 @@ events.EventEmitter.prototype.once = function (type, listener) {
     var line = stack[stack.length - 2];
     var curr_id = global.handler_ids;
     global.handler_ids += 1;
-    var wrapper_func = function() {server_clock.increment();var keep_req = {};if ( this instanceof http.ClientRequest ) {for (var d in global.request_info ) {keep_req[global.request_info[d]] = this[global.request_info[d]];}}var keep_res = {};if ( this instanceof http.IncomingMessage ) {for (var d in global.response_info ) {keep_res[global.response_info[d]] = this[global.response_info[d]];}}var hrTime = process.hrtime();var log_event = {'Function': 'EventEmitter.once', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'ReqInfo': JSON.stringify(keep_req), 'ResInfo': JSON.stringify(keep_res), 'Vector_Clock': server_clock.toString()};shim_logs.push(JSON.stringify(log_event));var args = from(arguments);listener.apply(this, args);};
+    var wrapper_func = function() {global.server_clock.increment();var clock_string = global.server_clock.toString();var keep_req = {};if ( this instanceof http.ClientRequest ) {for (var d in global.request_info ) {keep_req[global.request_info[d]] = this[global.request_info[d]];}}var keep_res = {};if ( this instanceof http.IncomingMessage ) {for (var d in global.response_info ) {keep_res[global.response_info[d]] = this[global.response_info[d]];}}var hrTime = process.hrtime();var log_event = {'Function': 'EventEmitter.once', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'ReqInfo': JSON.stringify(keep_req), 'ResInfo': JSON.stringify(keep_res), 'Vector_Clock': clock_string};shim_logs.push(JSON.stringify(log_event));var args = from(arguments);listener.apply(this, args);};
     var args = [type, wrapper_func];
     var retVal = _eventemitteronce.apply(this, args);
     return retVal;
@@ -259,7 +256,7 @@ events.EventEmitter.prototype.prependListener = function (type, listener) {
     var line = stack[stack.length - 2];
     var curr_id = global.handler_ids;
     global.handler_ids += 1;
-    var wrapper_func = function() {server_clock.increment();var keep_req = {};if ( this instanceof http.ClientRequest ) {for (var d in global.request_info ) {keep_req[global.request_info[d]] = this[global.request_info[d]];}}var keep_res = {};if ( this instanceof http.IncomingMessage ) {for (var d in global.response_info ) {keep_res[global.response_info[d]] = this[global.response_info[d]];}}var hrTime = process.hrtime();var log_event = {'Function': 'EventEmitter.prependListener', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'ReqInfo': JSON.stringify(keep_req), 'ResInfo': JSON.stringify(keep_res), 'Vector_Clock': server_clock.toString()};shim_logs.push(JSON.stringify(log_event));var args = from(arguments);listener.apply(this, args);};
+    var wrapper_func = function() {global.server_clock.increment();var clock_string = global.server_clock.toString();var keep_req = {};if ( this instanceof http.ClientRequest ) {for (var d in global.request_info ) {keep_req[global.request_info[d]] = this[global.request_info[d]];}}var keep_res = {};if ( this instanceof http.IncomingMessage ) {for (var d in global.response_info ) {keep_res[global.response_info[d]] = this[global.response_info[d]];}}var hrTime = process.hrtime();var log_event = {'Function': 'EventEmitter.prependListener', 'OrigLine': line, 'EventType': type, 'Time': hrTime[0] * 1000000 + hrTime[1] / 1000, 'ReqInfo': JSON.stringify(keep_req), 'ResInfo': JSON.stringify(keep_res), 'Vector_Clock': clock_string};shim_logs.push(JSON.stringify(log_event));var args = from(arguments);listener.apply(this, args);};
     var args = [type, wrapper_func];
     var retVal = _eventemitterprepend.apply(this, args);
     return retVal;
