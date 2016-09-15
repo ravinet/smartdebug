@@ -18,15 +18,18 @@ const server = http.createServer(function(request, response) {
      global.likes += likes;
      global.dislikes += dislikes;
      var output = "Total Likes: " + global.likes + "\nTotal Dislikes: " + global.dislikes;
-     response.setHeader("Access-Control-Allow-Origin", "*");
+     response.setHeader("Access-Control-Allow-Origin", "http://nyc.csail.mit.edu");
      var req_cookie = request.headers.cookie;
      if ( req_cookie ) {
         var client_clock = VectorClock.extractFromCookie(0, req_cookie);
         server_clock.update(client_clock);
         var response_cookie = "vector-clock=" + server_clock.toString();
         response.setHeader("Set-Cookie", response_cookie);
+        response.setHeader("Cookie", response_cookie);
      }
-     response.setHeader("Access-Control-Expose-Headers", "Set-Cookie, Content-Length, Connection, Date");
+     response.setHeader("Access-Control-Expose-Headers", "Set-Cookie, Content-Length, Connection, Date, Cookie");
+     response.setHeader("Access-Control-Allow-Headers", "Access-Control-Expose-Headers");
+     response.setHeader("Access-Control-Allow-Credentials", "true");
      response.end('<html><div>' + output + '</div></html>');
     });
 }
