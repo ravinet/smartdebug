@@ -19,9 +19,14 @@ const server = http.createServer(function(request, response) {
      global.dislikes += dislikes;
      var output = "Total Likes: " + global.likes + "\nTotal Dislikes: " + global.dislikes;
      response.setHeader("Access-Control-Allow-Origin", "*");
-     // will want this to be event-based eventually
-     response.setHeader("Cookie", "vector-clock=0:3");
-     response.setHeader("Access-Control-Expose-Headers", "Cookie, Content-Length, Connection, Date");
+     var req_cookie = request.headers.cookie;
+     if ( req_cookie ) {
+        var client_clock = VectorClock.extractFromCookie(0, req_cookie);
+        server_clock.update(client_clock);
+        var response_cookie = "vector-clock=" + server_clock.toString();
+        response.setHeader("Set-Cookie", response_cookie);
+     }
+     response.setHeader("Access-Control-Expose-Headers", "Set-Cookie, Content-Length, Connection, Date");
      response.end('<html><div>' + output + '</div></html>');
     });
 }
