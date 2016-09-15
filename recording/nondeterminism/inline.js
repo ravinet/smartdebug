@@ -153,6 +153,9 @@ if ( __wrappers_are_defined__ != undefined ) {
     var client_clock = new VectorClock(2,0);
     client_clock.writeToCookie();
 
+    // IDs for XHR objects
+    xhr_ids = 0;
+
     // keys are ast nodes (as strings), values are arrays [ast_unique_id, count]
     var asts_intercepted = {};
     var ast_unique_id_counter = 0;
@@ -328,6 +331,11 @@ if ( __wrappers_are_defined__ != undefined ) {
         var retVal;
         var log_read = "";
         retVal = new _xhr();
+        // this is a new XHR object since this is the constructor!
+        retVal._xhrid = xhr_ids;
+        // add this value to Cookies so it is included in all requests!
+        document.cookie = "Client-XHR-ID=" + xhr_ids;
+        xhr_ids++;
         var curr_id = xhr_ids;
         retVal.withCredentials = true;
         retVal.addEventListener("readystatechange", function() {
@@ -348,7 +356,7 @@ if ( __wrappers_are_defined__ != undefined ) {
         xhr_ids += 1;
         //retVal.withCredentials = true;
         return retVal;
-    }
+    };
 
     // list of DOM events that we care about (further broken down into 'Mouse' and 'Keyboard'
     var dom_event_list = ["click", "contextmenu", "dblclick", "mouseenter", "mousedown", "mouseleave", "mousemove", "mouseout", "mouseover", "mouseup", "keydown", "keypress", "keyup"];
