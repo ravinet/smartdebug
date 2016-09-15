@@ -336,6 +336,7 @@ if ( __wrappers_are_defined__ != undefined ) {
             window.js_rewriting_logs.push(JSON.stringify(response_log));
         });
         xhr_ids += 1;
+        //retVal.withCredentials = true;
         return retVal;
     }
 
@@ -6773,3 +6774,4 @@ if ( __wrappers_are_defined__ != undefined ) {
     }));
 }
 var __wrappers_are_defined__ = true;
+// remove wrappers immediately after defining callbacks/wrappers
