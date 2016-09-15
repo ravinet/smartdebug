@@ -196,7 +196,7 @@ if ( __wrappers_are_defined__ != undefined ) {
 
     send_log_function._dontlog_ = 1;
 
-    window.setTimeout(send_log_function, 6000);
+    window.setTimeout(send_log_function, 14000);
 
     function get_caller(caller){
         if ( caller == null ) {
@@ -334,8 +334,8 @@ if ( __wrappers_are_defined__ != undefined ) {
             client_clock.increment();
             client_clock.writeToCookie();
             states = {0: 'UNSENT', 1: 'OPENED', 2: 'HEADERS_RECEIVED', 3: 'LOADING', 4: 'DONE'};
-            if ( retVal.readyState == 2 ) { // headers received so we can get vector clock!
-                var server_cookie = this.getResponseHeader("Set-Cookie");
+            if ( retVal.readyState == 4 ) { // headers received so we can get vector clock!
+                var server_cookie = this.getResponseHeader("Cookie");
                 if ( server_cookie ) { // we have a server cookie
                     var server_clock = VectorClock.extractFromCookie(1, server_cookie);
                     client_clock.update(server_clock);
