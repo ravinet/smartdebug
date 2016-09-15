@@ -163,7 +163,7 @@ process.on('SIGINT', exitHandler.bind(null, {exit:true}));
     global.VectorClock = VectorClock;
 })();
     // create vector clock for client (has entries for client and server)
-    global.server_clock = new VectorClock(2,0);
+    global.server_clock = new VectorClock(2,1);
 
 global.http_events = ['response', 'end', 'finish', '_socketEnd', 'connect', 'free', 'close', 'agentRemove', 'socket', 'drain', 'data', 'prefinish', 'SIGWINCH'];
 global.http_emits = ['socket', 'prefinish', 'resume', 'lookup', 'finish', 'connect', 'data', 'readable', 'end', 'close'];
