@@ -97,12 +97,13 @@ if ( __wrappers_are_defined__ != undefined ) {
     //localPos argument is required and indicates the position
     //in the vector which the new VectorClock should associate
     //with the local process.
-    VectorClock.extractFromCookie = function(localPos, key){
+    VectorClock.extractFromCookie = function(localPos, cookie, key){
         if(!localPos){
             throw "VectorClock::extractFromCookie(): ERROR: Must specify a localPos.";
         }
 
-        var cookies = document.cookie.split(";");
+        var arg_cookie = cookie || document.cookie;
+        var cookies = arg_cookie.split(";");
         key = key || "vector-clock";
         for(var i = 0; i < cookies.length; i++){
             var tokens = cookies[i].split("=");
@@ -328,10 +329,19 @@ if ( __wrappers_are_defined__ != undefined ) {
         var log_read = "";
         retVal = new _xhr();
         var curr_id = xhr_ids;
+        retVal.withCredentials = true;
         retVal.addEventListener("readystatechange", function() {
             client_clock.increment();
             client_clock.writeToCookie();
             states = {0: 'UNSENT', 1: 'OPENED', 2: 'HEADERS_RECEIVED', 3: 'LOADING', 4: 'DONE'};
+            if ( retVal.readyState == 2 ) { // headers received so we can get vector clock!
+                var server_cookie = this.getResponseHeader("Set-Cookie");
+                if ( server_cookie ) { // we have a server cookie
+                    var server_clock = VectorClock.extractFromCookie(1, server_cookie);
+                    client_clock.update(server_clock);
+                    client_clock.writeToCookie();
+                }
+            }
             response_log = {'Type': 'XHR', 'State': retVal.readyState, 'StateText': states[retVal.readyState], 'Status': retVal.status, 'StatusText': retVal.statusText, 'Headers': JSON.stringify(retVal.getAllResponseHeaders()), 'Response': retVal.responseText, 'id': curr_id, 'Time': performance.now(), 'Vector_Clock':client_clock.toString()};
             window.js_rewriting_logs.push(JSON.stringify(response_log));
         });
