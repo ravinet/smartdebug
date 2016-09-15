@@ -111,28 +111,32 @@ process.on('SIGINT', exitHandler.bind(null, {exit:true}));
     //localPos argument is required and indicates the position
     //in the vector which the new VectorClock should associate
     //with the local process.
-//    VectorClock.extractFromCookie = function(localPos, key){
-//        if(!localPos){
-//            throw "VectorClock::extractFromCookie(): ERROR: Must specify a localPos.";
-//        }
-//
-//        var cookies = document.cookie.split(";");
-//        key = key || "vector-clock";
-//        for(var i = 0; i < cookies.length; i++){
-//            var tokens = cookies[i].split("=");
-//            if(tokens[0] == key || tokens[0] == " vector-clock"){
-//                var val = tokens[1];
-//                tokens = val.split(":");
-//                var newClock = new VectorClock();
-//                for(var i = 0; i < tokens.length; i++){
-//                    newClock.clock[i] = parseInt(tokens[i]);
-//                }
-//                newClock.localPos = localPos;
-//                return newClock;
-//            }
-//        }
-//        return null;
-//    };
+    VectorClock.extractFromCookie = function(localPos, cookie, key){
+        if(!localPos && localPos != 0){
+            throw "VectorClock::extractFromCookie(): ERROR: Must specify a localPos.";
+        }
+
+        if ( !cookie ) {
+            throw "VectorClock::extractFromCookie(): ERROR: MUst specify a cookie.";
+        }
+
+        var cookies = cookie.split(";");
+        key = key || "vector-clock";
+        for(var i = 0; i < cookies.length; i++){
+            var tokens = cookies[i].split("=");
+            if(tokens[0] == key || tokens[0] == " vector-clock"){
+                var val = tokens[1];
+                tokens = val.split(":");
+                var newClock = new VectorClock();
+                for(var i = 0; i < tokens.length; i++){
+                    newClock.clock[i] = parseInt(tokens[i]);
+                }
+                newClock.localPos = localPos;
+                return newClock;
+            }
+        }
+        return null;
+    };
 
     //Sorts the given log of {clock: VectorClockInstance, data: whatever}
     //objects IN PLACE, i.e., the function does not return a new array,
