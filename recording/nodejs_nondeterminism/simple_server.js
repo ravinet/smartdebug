@@ -19,6 +19,9 @@ const server = http.createServer(function(request, response) {
      global.dislikes += dislikes;
      var output = "Total Likes: " + global.likes + "\nTotal Dislikes: " + global.dislikes;
      response.setHeader("Access-Control-Allow-Origin", "*");
+     // will want this to be event-based eventually
+     response.setHeader("Cookie", "vector-clock=0:3");
+     response.setHeader("Access-Control-Expose-Headers", "Cookie, Content-Length, Connection, Date");
      response.end('<html><div>' + output + '</div></html>');
     });
 }
