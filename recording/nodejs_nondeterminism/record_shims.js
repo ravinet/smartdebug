@@ -6,6 +6,25 @@ var http = require('http');
 const util = require('util');
 delete Array.from;
 
+process.stdin.resume();
+
+// output logs prior to exiting
+function exitHandler(options, err) {
+    if (options.exit || options.cleanup){
+        for (var i = 0; i < shim_logs.length; i++ ) {
+            console.log(shim_logs[i]);
+        }
+        process.exit();
+    }
+}
+
+//do something when app is closing
+process.on('exit', exitHandler.bind(null,{cleanup:true}));
+
+//catches ctrl+c event
+process.on('SIGINT', exitHandler.bind(null, {exit:true}));
+
+
 (function(){
     var nextUniqueId = 0;
 
@@ -247,13 +266,13 @@ events.EventEmitter.prototype.prependListener = function (type, listener) {
 };
 
 // output logs after 4 seconds
-var outputlog = function () {
-    for (var i = 0; i < shim_logs.length; i++ ) {
-        console.log(shim_logs[i]);
-    }
-};
-outputlog._dontlog = true;
-setTimeout(outputlog, 4000);
+//var outputlog = function () {
+//    for (var i = 0; i < shim_logs.length; i++ ) {
+//        console.log(shim_logs[i]);
+//    }
+//};
+//outputlog._dontlog = true;
+//setTimeout(outputlog, 4000);
 
 // shim for EventEmitter.emit()
 _eventemitteremit = events.EventEmitter.prototype.emit;
